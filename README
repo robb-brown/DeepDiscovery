@@ -1,0 +1,5 @@
+DeepDiscovery is a deep learning based package focused on medical data analysis, with an emphasis on speed and robustness.  We hope to provide basic capabilities to help develop tools that can be used for both scientific discovery and application in the clinic.
+
+Both a comprehensive Python API and an easy to use Qt-based GUI are planned.
+
+Coming Soon.
