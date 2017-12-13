@@ -27,8 +27,8 @@ examples = [dict(input=i,truth=i.replace('.nii.gz','_cc.nii.gz')) for i in image
 # give an integer value (like 1) that would reserve that many examples.
 # We're training a segmenter, so we need our truth image converted into one-hot (one channel per class).
 # We have two classes (not corpus callosum = 0 and corpus callosum = 1) so we set truthComponents to
-# [0,1].
-trainingData = dd.Data.ImageTrainingData(examples,reserveForValidation=0.1,reserveForTest=0,truthComponents=[0,1],gentleCoding=False)
+# [1,0].  The first channel will be the positive mask.
+trainingData = dd.Data.ImageTrainingData(examples,reserveForValidation=0.1,reserveForTest=0,truthComponents=[1,0])
 
 # You can test out your trainingData object by asking for an example:
 example = trainingData.getTrainingExamples(1)
@@ -54,7 +54,7 @@ session = tf.InteractiveSession()
 # similar to a U or V net. filterPlan is the number of filters at each downsampling layer.
 # filterSize is the size of the kernel, and postUDepth lets you add extra layers after
 # the U net.
-filterPlan = [10,20,30,40]; filterSize = 5; postUDepth = 1
+filterPlan = [10,20,30,40]; filterSize = 5; postUDepth = 2
 segmenter = dd.Net.Segmenter2D(filterPlan=filterPlan,filterSize=filterSize,postUDepth=postUDepth)
 
 # ---------------------------------------------------------------------
@@ -65,13 +65,13 @@ segmenter = dd.Net.Segmenter2D(filterPlan=filterPlan,filterSize=filterSize,postU
 # on disk so we can look at them or serve them with a webserver.
 tracker = dd.Trainer.ProgressTracker(logPlots=False,plotEvery=50,basePath='./tracker')
 metrics = ['output','cost','jaccard']
-trainer = dd.Trainer.Trainer(session,segmenter,trainingData,progressTracker=tracker,metrics=metrics,learning_rate=1e-5, beta1=0.9, beta2=0.999, epsilon=1e-08)
+trainer = dd.Trainer.Trainer(session,segmenter,trainingData,progressTracker=tracker,metrics=metrics,learning_rate=1e-4, beta1=0.9, beta2=0.999, epsilon=1e-08)
 # ---------------------------------------------------------------------
 
 print('\n\n\n')
 
 # ------------------------- Train -----------------------------------
-tf.global_variables_initializer().run()
+session.run(tf.global_variables_initializer())
 trainer.train(trainTime=0.5,examplesPerEpoch=10,trainingExamplesPerBatch=2)
 # ---------------------------------------------------------------------
 

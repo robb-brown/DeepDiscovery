@@ -5,7 +5,7 @@ from collections import OrderedDict
 from .. import DeepRoot
 
 class ProgressTracker(DeepRoot.DeepRoot):
-	
+
 	def __init__(self,figures={},logPlots=True,plotEvery=1,basePath='./tracker',fileType='pdf',**plotArgs):
 		self.trainingRecord = OrderedDict({'Training':[],'Validation':[]})
 		self.performanceRecord = OrderedDict({'Training':{'elapsed':[]},'Validation':{'elapsed':[]}})
@@ -56,7 +56,7 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		# Plot progress graph
 		trainMetric = numpy.array(self.performanceRecord['Training'].get(metric,[])); trainElapsed = numpy.array(self.performanceRecord['Training']['elapsed'])
 		validateMetric = numpy.array(self.performanceRecord['Validation'].get(metric,[])); validateElapsed = numpy.array(self.performanceRecord['Validation'].get('elapsed',[]))
-		
+
 		# Plot the full record for the metric
 		self.figures[metric].clf(); axis = self.figures[metric].add_subplot(111); plotFunction = axis.semilogy if args.get('logPlots',self.logPlots) else axis.plot
 		if len(trainElapsed) > 0:
@@ -102,12 +102,12 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		if len(output.shape) == 4:				# batch/z,y,x,channel
 			inputImage = inputImage[...,0]
 			output = output[...,1]
-			truth = numpy.where(truth[...,1]>0.5,1,0)
+			truth = numpy.where(truth[...,0]>0.5,1,0)
 		else:									# batch, z,y,x,channel
 			inputImage = inputImage[0,...,0]
 			output = output[0,...,1]
-			truth = where(truth[0,...,1]>0.5,1,0)
-			
+			truth = where(truth[0,...,0]>0.5,1,0)
+
 		#  Axial
 		axis = self.figures['output'].add_subplot(2,2,1);
 		if (truth>0.5).any():
@@ -117,6 +117,7 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		axis.imshow(inputImage[midSlice],cmap=pylab.cm.gray,origin='lower')
 		axis.imshow(output[midSlice],cmap=cmap,origin='lower',alpha=0.3,vmin=0,vmax=1.0)
 		axis.contour(truth[midSlice],colors=['b'],alpha=0.1,linewidths=1,origin='lower')
+		#axis.imshow(truth[midSlice],cmap=pylab.cm.gray,origin='lower')
 
 		# Coronal
 		axis = self.figures['output'].add_subplot(2,2,2);
