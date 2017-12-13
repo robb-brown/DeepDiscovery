@@ -28,7 +28,7 @@ examples = [dict(input=i,truth=i.replace('.nii.gz','_cc.nii.gz')) for i in image
 # We're training a segmenter, so we need our truth image converted into one-hot (one channel per class).
 # We have two classes (not corpus callosum = 0 and corpus callosum = 1) so we set truthComponents to
 # [0,1].
-trainingData = dd.Data.ImageTrainingData(examples,reserveForValidation=0.1,reserveForTest=0,truthComponents=[0,1])
+trainingData = dd.Data.ImageTrainingData(examples,reserveForValidation=0.1,reserveForTest=0,truthComponents=[0,1],gentleCoding=False)
 
 # You can test out your trainingData object by asking for an example:
 example = trainingData.getTrainingExamples(1)

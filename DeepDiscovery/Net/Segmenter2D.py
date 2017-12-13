@@ -20,12 +20,11 @@ class Segmenter2D(UNet2D):
 
 	def createModel(self,dimensions=(None,None,None,1),outputValues=2,filterPlan=[10,20,30,40,50],filterSize=(5,5),layerThickness=None,postUDepth=2,postUFilterSize=None,maxpool=False,inputDropout=False,inputNoise=False,internalDropout=False,**extras):
 		super().createModel(dimensions=dimensions,outputValues=outputValues,filterPlan=filterPlan,filterSize=filterSize,layerThickness=layerThickness,postUDepth=postUDepth,postUFilterSize=postUFilterSize,maxpool=maxpool,inputDropout=inputDropout,inputNoise=inputNoise,internalDropout=internalDropout,**extras)
-		self.net = tf.layers.conv2d(self.net, filters=outputValues, kernel_size = 1, padding='same', activation=tf.nn.relu,data_format='channels_last')
+		self.net = tf.layers.conv2d(self.net, filters=outputValues, kernel_size = 5, padding='same', activation=tf.nn.relu,data_format='channels_last')
 		self.logits = self.net
-		self.y = self.output = self.net = tf.nn.softmax(self.logits,1)
+		self.y = self.output = self.net = tf.nn.softmax(self.logits,-1)
 		
 		self.modelParameters['cost'] = tf.losses.softmax_cross_entropy(onehot_labels=self.yp, logits=self.logits)
-		self.update = tf.train.AdamOptimizer(1e-3).minimize(self.cost)
 	
 
 	def segment(self,image):
