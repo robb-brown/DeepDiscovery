@@ -34,7 +34,7 @@ trainingData = dd.Data.ImageTrainingData(examples,reserveForValidation=0.1,reser
 example = trainingData.getTrainingExamples(1)
 
 # Let's save this training data.  Since we asked DeepDiscovery to do the train/test
-# allocation, for consistency we might want to use this same object for training 
+# allocation, for consistency we might want to use this same object for training
 # different networks.
 trainingData.save('corpusCallosum.data')
 
@@ -43,18 +43,18 @@ trainingData.save('corpusCallosum.data')
 # is done by the data object.  This will be moved to the network preprocessing though.
 # If we're in 2d mode we only need to pad x and y.
 trainingData.mode = '2d'
-trainingData.depth = 3
+trainingData.depth = 5
 # ---------------------------------------------------------------------------------
 
 
 session = tf.InteractiveSession()
 
 # -----------------------  Creating a Network ------------------------
-# This is where we create our actual model.  Let's use a Segmenter2D, which implements something 
+# This is where we create our actual model.  Let's use a Segmenter2D, which implements something
 # similar to a U or V net. filterPlan is the number of filters at each downsampling layer.
-# filterSize is the size of the kernel, and postUDepth lets you add extra layers after 
+# filterSize is the size of the kernel, and postUDepth lets you add extra layers after
 # the U net.
-filterPlan = [10,20,30]; filterSize = 5; postUDepth = 1
+filterPlan = [10,20,30,40]; filterSize = 5; postUDepth = 1
 segmenter = dd.Net.Segmenter2D(filterPlan=filterPlan,filterSize=filterSize,postUDepth=postUDepth)
 
 # ---------------------------------------------------------------------
@@ -63,7 +63,7 @@ segmenter = dd.Net.Segmenter2D(filterPlan=filterPlan,filterSize=filterSize,postU
 # The trainer object takes care of training our model.  The tracker keeps realtime stats on
 # the performance of the network as it is trained, creates graphs, and dumps these to files
 # on disk so we can look at them or serve them with a webserver.
-tracker = dd.Trainer.ProgressTracker(logPlots=False,plotEvery=10,basePath='./tracker')
+tracker = dd.Trainer.ProgressTracker(logPlots=False,plotEvery=50,basePath='./tracker')
 metrics = ['output','cost','jaccard']
 trainer = dd.Trainer.Trainer(session,segmenter,trainingData,progressTracker=tracker,metrics=metrics,learning_rate=1e-5, beta1=0.9, beta2=0.999, epsilon=1e-08)
 # ---------------------------------------------------------------------
@@ -72,16 +72,10 @@ print('\n\n\n')
 
 # ------------------------- Train -----------------------------------
 tf.global_variables_initializer().run()
-trainer.train(trainTime=0.1,examplesPerEpoch=10)
+trainer.train(trainTime=0.5,examplesPerEpoch=10,trainingExamplesPerBatch=2)
 # ---------------------------------------------------------------------
 
 
 ex = trainingData.getTrainingExamples()
 print("Executing forward pass.  Resulting shape: {}".format(segmenter.forwardPass(ex).shape))
 print("Cost = {}".format(segmenter.evaluateCost(ex)))
-
-
-
-
-
-
