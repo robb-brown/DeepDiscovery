@@ -1,0 +1,8 @@
+*.pyc
+*.png
+*.pdf
+dd2env
+dd2env/*
+*.egg
+*.egg-info
+*.tmproj
