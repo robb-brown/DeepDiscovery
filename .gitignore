@@ -6,3 +6,4 @@ dd2env/*
 *.egg
 *.egg-info
 *.tmproj
+*.data
