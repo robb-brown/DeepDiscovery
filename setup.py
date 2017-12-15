@@ -18,6 +18,7 @@ setup(name='DeepDiscovery',
 		'tinydb',
 		'tinymongo',
 		'dill',
+		'colormath',
 	],
 	zip_safe=False)
 

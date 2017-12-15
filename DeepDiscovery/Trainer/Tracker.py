@@ -4,6 +4,26 @@ import numpy,dill,os
 from collections import OrderedDict
 from .. import DeepRoot
 
+
+cdict = {	'red' 	: 	(	(0.0,0.1,0.1),
+							(0.5,0.7,0.7),
+							(0.5,1.0,1.0),
+							(1.00000,0.5,0.5),
+						),
+			'green' :	(
+							(0.0,0.1,0.1),
+							(0.5,0.7,0.7),
+							(1.0,0.1,0.1),
+						),
+			'blue' 	: 	(
+							(0.0,0.5,0.5),
+							(0.5,1.0,1.0),
+							(0.5,0.7,0.7),
+							(1.0,0.1,0.1),
+						)
+}
+blue_red_segmentationCM = matplotlib.colors.LinearSegmentedColormap('BlueRedSegmentation', cdict)
+
 class ProgressTracker(DeepRoot.DeepRoot):
 
 	def __init__(self,figures={},logPlots=True,plotEvery=1,basePath='./tracker',fileType='pdf',**plotArgs):
@@ -95,14 +115,14 @@ class ProgressTracker(DeepRoot.DeepRoot):
 	def plotOutput(self,example,result,**args):
 		# Plot mask
 		self.figures['output'] = self.figures.get('output',pylab.figure('Output'))
-		self.figures['output'].clf(); cmap = pylab.cm.RdBu; #pylab.cm.viridis
+		self.figures['output'].clf(); cmap = blue_red_segmentationCM = matplotlib.colors.LinearSegmentedColormap('BlueRedSegmentation', cdict) #pylab.cm.RdBu; #pylab.cm.viridis
 
 		# ROBB make this squish the channels later.  For now just take channel 1
 		inputImage,output,truth = result
 		if len(output.shape) == 4:				# batch/z,y,x,channel
 			inputImage = inputImage[...,0]
 			output = output[...,1]
-			truth = numpy.where(truth[...,0]>0.5,1,0)
+			truth = numpy.where(truth[...,1]>0.5,1,0)
 		else:									# batch, z,y,x,channel
 			inputImage = inputImage[0,...,0]
 			output = output[0,...,1]
@@ -114,10 +134,12 @@ class ProgressTracker(DeepRoot.DeepRoot):
 			midSlice = numpy.argmax(numpy.sum(truth,axis=(1,2)))
 		else:
 			midSlice = truth.shape[0] / 2
+		
 		axis.imshow(inputImage[midSlice],cmap=pylab.cm.gray,origin='lower')
 		axis.imshow(output[midSlice],cmap=cmap,origin='lower',alpha=0.3,vmin=0,vmax=1.0)
 		axis.contour(truth[midSlice],colors=['b'],alpha=0.1,linewidths=1,origin='lower')
 		#axis.imshow(truth[midSlice],cmap=pylab.cm.gray,origin='lower')
+		pylab.figure('Hist'); pylab.clf(); pylab.hist(output[midSlice].ravel(),100,log=True,normed=True)
 
 		# Coronal
 		axis = self.figures['output'].add_subplot(2,2,2);

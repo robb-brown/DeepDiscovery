@@ -28,7 +28,7 @@ examples = [dict(input=i,truth=i.replace('.nii.gz','_cc.nii.gz')) for i in image
 # We're training a segmenter, so we need our truth image converted into one-hot (one channel per class).
 # We have two classes (not corpus callosum = 0 and corpus callosum = 1) so we set truthComponents to
 # [1,0].  The first channel will be the positive mask.
-trainingData = dd.Data.ImageTrainingData(examples,reserveForValidation=0.1,reserveForTest=0,truthComponents=[1,0],gentleCoding=False)
+trainingData = dd.Data.ImageTrainingData(examples,reserveForValidation=0.1,reserveForTest=0,truthComponents=[0,1],gentleCoding=False)
 
 # You can test out your trainingData object by asking for an example:
 example = trainingData.getTrainingExamples(1)
@@ -64,15 +64,15 @@ segmenter = dd.Net.Segmenter2D(filterPlan=filterPlan,filterSize=filterSize,postU
 # the performance of the network as it is trained, creates graphs, and dumps these to files
 # on disk so we can look at them or serve them with a webserver.
 tracker = dd.Trainer.ProgressTracker(logPlots=False,plotEvery=50,basePath='./tracker')
-metrics = ['output','cost','jaccard']
-trainer = dd.Trainer.Trainer(session,segmenter,trainingData,progressTracker=tracker,metrics=metrics,learning_rate=5e-5, beta1=0.9, beta2=0.999, epsilon=1e-08)
+metrics = ['output','cost','jaccard']; learning_rate = 1e-3
+trainer = dd.Trainer.Trainer(session,segmenter,trainingData,progressTracker=tracker,metrics=metrics,learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1e-08)
 # ---------------------------------------------------------------------
 
 print('\n\n\n')
 
 # ------------------------- Train -----------------------------------
 session.run(tf.global_variables_initializer())
-trainer.train(trainTime=0.5,examplesPerEpoch=5,trainingExamplesPerBatch=1)
+trainer.train(trainTime=1,examplesPerEpoch=5,trainingExamplesPerBatch=1)
 # ---------------------------------------------------------------------
 
 

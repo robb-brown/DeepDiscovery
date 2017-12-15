@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropout=None,normalization=None,activation=tf.nn.relu,name='UNet',dimensions=3):
+	init = tf.contrib.layers.xavier_initializer()
 	if dimensions == 2:
 		convDown = tf.layers.conv2d; convUp = tf.layers.conv2d_transpose; maxpoolF = tf.layers.max_pooling2d
 	else:
@@ -32,6 +33,7 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 						strides = stride,
 						padding='same',
 						activation = activation,
+						kernel_initializer = init,
 						data_format='channels_last',
 						name = '{}-DownConv{}'.format(name,level+1))
 		if normalization is not None:
@@ -52,6 +54,7 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 							padding='same',
 							data_format='channels_last',
 							activation = activation,
+							kernel_initializer = init,
 							name = '{}-DownExtraConv{}-{}'.format(name,level+1,extraIndex+1))
 			if not normalization is None:
 				pass
@@ -72,6 +75,7 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 						padding='same',
 						data_format='channels_last',
 						activation = activation,
+						kernel_initializer = init,
 						name = '{}-UpConv{}'.format(name,index+1))
 		if not index == len(filterPlan):
 			net = tf.concat([net,downLayers[::-1][index+1]],axis=-1,name='{}-UpConcat{}'.format(name,index+1))
@@ -87,6 +91,7 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 								padding='same',
 								data_format='channels_last',
 								activation = activation,
+								kernel_initializer = init,
 								name = '{}-UpExtraConv{}-{}'.format(name,index+1,extraIndex+1))
 				if normalization is not None:
 					pass
@@ -123,6 +128,7 @@ class UNet2D(Net):
 
 	def createModel(self,dimensions=(None,None,None,1),filterPlan=[10,20,30,40,50],filterSize=(5,5),layerThickness=1,postUDepth=2,postUFilterSize=None,maxpool=False,inputDropout=False,inputNoise=False,internalDropout=False,**extras):
 		"""Override this method to customize your model"""
+		init = tf.contrib.layers.xavier_initializer()
 		postUFilterSize = postUFilterSize if postUFilterSize is not None else filterSize
 		self.x = tf.placeholder('float',shape=dimensions,name='input')
 		
@@ -155,6 +161,7 @@ class UNet2D(Net):
 									kernel_size=filterSize,
 									padding='same',
 									activation = self.nonlinearity,
+									kernel_initializer = init,
 									data_format='channels_last',
 									name = '{}PostU{}'.format(self.name,i+1))
 			
@@ -239,7 +246,7 @@ class UNet3D(UNet2D):
 		net = uNet3D(net,filterPlan = filterPlan,filterSize = filterSize,maxpool=maxpool,layerThickness=layerThickness,normalization=self.normalization,nonlinearity=self.nonlinearity)
 
 		for i in range(postUDepth):
-			net = lasagne.layers.Conv3DLayer(net, filters=filterPlan[0], filter_size = filterSize, pad='same',nonlinearity=self.nonlinearity)
+			net = lasagne.layers.Conv3DLayer(net, filters=filterPlan[0], filter_size = filterSize, pad='same',nonlinearity=self.nonlinearity,kernel_initializer = init)
 			net.name = 'postU%d' % i
 			if self.normalization is not None:
 				net = self.normalization(net)

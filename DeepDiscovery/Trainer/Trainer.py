@@ -118,6 +118,7 @@ class Trainer(DeepRoot.DeepRoot):
 			example = self.examples.getValidationExamples(validationExamplesPerBatch)
 			example.update(args)
 			result = self.validate(example)
+			
 			if self.progressTracker is not None:
 				self.progressTracker.update(example=example,epoch=self.epoch,iteration=iteration,elapsed=self.previouslyElapsed+self.elapsed,totalIterations=self.epoch*examplesPerEpoch+iteration,kind='Validation',metrics=result)
 			self.epoch += 1; t2 = time.time(); elapsed = t2-self.startTime;
