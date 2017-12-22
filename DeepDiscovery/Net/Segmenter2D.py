@@ -14,18 +14,19 @@ class Segmenter2D(UNet2D):
 			dimensions is optional, but should be [channels, y, x] if set
 		"""
 		self.hyperParameters['outputValues'] = outputValues
-		self.modelParameters['logits'] = None
 		super().__init__(dimensions=dimensions,filterPlan=filterPlan,filterSize=filterSize,layerThickness=layerThickness,postUDepth=postUDepth,outputValues=outputValues,maxpool=maxpool,normalization=normalization,nonlinearity=nonlinearity,inputDropout=inputDropout,inputNoise=inputNoise,internalDropout=internalDropout,gentleCoding=gentleCoding,name=name,**args)
 
 
-	def createModel(self,dimensions=(None,None,None,1),outputValues=2,filterPlan=[10,20,30,40,50],filterSize=(5,5),layerThickness=None,postUDepth=2,postUFilterSize=None,maxpool=False,inputDropout=False,inputNoise=False,internalDropout=False,**extras):
-		super().createModel(dimensions=dimensions,outputValues=outputValues,filterPlan=filterPlan,filterSize=filterSize,layerThickness=layerThickness,postUDepth=postUDepth,postUFilterSize=postUFilterSize,maxpool=maxpool,inputDropout=inputDropout,inputNoise=inputNoise,internalDropout=internalDropout,**extras)
-		init = tf.contrib.layers.xavier_initializer()
-		self.net = tf.layers.conv2d(self.net, filters=outputValues, kernel_size = 1, padding='same', activation=None,kernel_initializer = None,data_format='channels_last')
-		self.logits = self.net
-		self.y = self.output = self.net = tf.nn.softmax(self.logits,-1)
+	def createModel(self):
+		super().createModel()
+		with tf.variable_scope(self.name):
+			self.modelParameters['logits'] = None
+			init = tf.contrib.layers.xavier_initializer()
+			self.net = tf.layers.conv2d(self.net, filters=self.outputValues, kernel_size = 1, padding='same', activation=None,kernel_initializer = None,data_format='channels_last')
+			self.logits = self.net
+			self.y = self.output = self.net = tf.nn.softmax(self.logits,-1)
 		
-		self.modelParameters['cost'] = tf.losses.softmax_cross_entropy(onehot_labels=self.yp, logits=self.logits)
+			self.modelParameters['cost'] = tf.losses.softmax_cross_entropy(onehot_labels=self.yp, logits=self.logits)
 	
 
 	def segment(self,image):

@@ -3,6 +3,7 @@ import matplotlib
 import numpy,dill,os
 from collections import OrderedDict
 from .. import DeepRoot
+import time
 
 
 cdict = {	'red' 	: 	(	(0.0,0.1,0.1),
@@ -26,21 +27,28 @@ blue_red_segmentationCM = matplotlib.colors.LinearSegmentedColormap('BlueRedSegm
 
 class ProgressTracker(DeepRoot.DeepRoot):
 
-	def __init__(self,figures={},logPlots=True,plotEvery=1,basePath='./tracker',fileType='pdf',**plotArgs):
-		self.trainingRecord = OrderedDict({'Training':[],'Validation':[]})
-		self.performanceRecord = OrderedDict({'Training':{'elapsed':[]},'Validation':{'elapsed':[]}})
-		self.figures = figures
-		self.logPlots = logPlots
-		self.plotArgs = dict(
-			alpha = 0.5,
-			marker='o',
-		)
-		self.plotArgs.update(plotArgs)
-		self.plotEvery = plotEvery
-		self.counter = 0
-		self.excludeFromPickle = ['figures']
-		self.basePath = basePath
-		self.fileType = fileType
+	def __new__(cls,*args,**kwargs):
+		self = super().__new__(cls)
+		self.__dict__['modelParameters']['figures'] = {}
+		return self
+
+	def __init__(self,figures={},logPlots=True,plotEvery=1,basePath='./tracker',fileType='pdf',name=None,**plotArgs):
+		self.name = name if name is not None else self.__class__.__name__
+		self.modelParameters['figures'] = figures
+		self.__dict__.update(dict(
+			trainingRecord = OrderedDict({'Training':[],'Validation':[]}),
+			performanceRecord = OrderedDict({'Training':{'elapsed':[]},'Validation':{'elapsed':[]}}),
+			logPlots = logPlots,
+			plotArgs = dict(
+				alpha = 0.5,
+				marker='o',
+				),
+			plotEvery = plotEvery,
+			counter = 0,
+			basePath = basePath,
+			fileType = fileType,
+		))
+		plotArgs.update(plotArgs)
 
 	def update(self,forcePlot=False,**args):
 		metrics = args.get('metrics',{})
@@ -167,21 +175,20 @@ class ProgressTracker(DeepRoot.DeepRoot):
 			pass
 
 
+	def save(self,fname=None):
+		""" Save a DD object to the directory fname."""
+		name = self.name + '.tracker'
+		fname = self.fname if fname is None else os.path.join(fname,name) if os.path.isdir(fname) else fname
+		self.__dict__['fname'] = fname
+		self.__dict__['saveTime'] = time.time()
+		with open(fname,'wb') as f:
+			dill.dump(self,f,protocol=dill.HIGHEST_PROTOCOL)
+		return fname
 
-	# Pickling support
-	def __getstate__(self):
-		pickleDict = dict()
-		for k,v in self.__dict__.items():
-			if not issubclass(k.__class__,matplotlib.figure.Figure)\
-				and not (k in self.excludeFromPickle or v in self.excludeFromPickle)\
-				and not k == 'excludeFromPickle':
-					pickleDict[k] = v
-			else:
-				pickleDict[k] = None
-		pickleDict['excludeFromPickle'] = [k for k in self.__dict__.get('excludeFromPickle',['figures'])]
-		return pickleDict
+	@classmethod
+	def load(self,fname,**args):
+		with open(fname,'rb') as f:
+			obj = dill.load(f)
+		obj.__dict__['fname'] = fname
+		return obj
 
-	def __setstate__(self,params):
-		#params.pop('excludeFromPickle')
-		params['excludeFromPickle'] = params.get('excludeFromPickle',['figures'])
-		self.__dict__.update(params)

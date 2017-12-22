@@ -1,9 +1,13 @@
 *.pyc
 *.png
 *.pdf
-dd2env
-dd2env/*
+ddenv
+ddenv/*
+*env
+*env/*
 *.egg
 *.egg-info
 *.tmproj
 *.data
+/examples/*/*.net
+/examples/*/*.data

@@ -1,12 +1,16 @@
 import DeepDiscovery as dd
 import glob, os
 import tensorflow as tf
+import numpy
 
 import matplotlib; matplotlib.interactive(True)
 
 import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(format='%(asctime)s %(levelname)s : %(message)s',level=logging.INFO)
+
+# Initialize everything with specific random seeds for repeatability
+tf.set_random_seed(1); numpy.random.seed(1)
 
 
 # -----------------------  Creating a Training Data Object ------------------------
@@ -49,31 +53,49 @@ trainingData.depth = 3
 
 session = tf.InteractiveSession()
 
-# -----------------------  Creating a Network ------------------------
-# This is where we create our actual model.  Let's use a Segmenter2D, which implements something
-# similar to a U or V net. filterPlan is the number of filters at each downsampling layer.
-# filterSize is the size of the kernel, and postUDepth lets you add extra layers after
-# the U net.
-filterPlan = [10,20,30]; filterSize = 5; postUDepth = 1
-segmenter = dd.Net.Segmenter2D(filterPlan=filterPlan,filterSize=filterSize,postUDepth=postUDepth)
+if 0:
+	# -----------------------  Creating a Network ------------------------
+	# This is where we create our actual model.  Let's use a Segmenter2D, which implements something
+	# similar to a U or V net. filterPlan is the number of filters at each downsampling layer.
+	# filterSize is the size of the kernel, and postUDepth lets you add extra layers after
+	# the U net. We give our network a name so that it is distinct from others we might load or create
+	# (it puts its tensorflow variables into a variable scope based on the name) and will also
+	# default to saving itself under that name.
+	filterPlan = [10,20,30]; filterSize = 5; postUDepth = 1
+	segmenter = dd.Net.Segmenter2D(filterPlan=filterPlan,filterSize=filterSize,postUDepth=postUDepth,name='CorpusCallosum2D')
+	# ---------------------------------------------------------------------
 
-# ---------------------------------------------------------------------
+	# -----------------------  Creating a Trainer and Tracker------------------------
+	# The trainer object takes care of training our model.  The tracker keeps realtime stats on
+	# the performance of the network as it is trained, creates graphs, and dumps these to files
+	# on disk so we can look at them or serve them with a webserver.
+	tracker = dd.Trainer.ProgressTracker(logPlots=False,plotEvery=50,basePath='./tracker')
+	metrics = ['output','cost','jaccard']; learning_rate = 1e-3
+	trainer = dd.Trainer.Trainer(segmenter,trainingData,progressTracker=tracker,metrics=metrics,learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1e-08)
+	# ---------------------------------------------------------------------
 
-# -----------------------  Creating a Trainer and Tracker------------------------
-# The trainer object takes care of training our model.  The tracker keeps realtime stats on
-# the performance of the network as it is trained, creates graphs, and dumps these to files
-# on disk so we can look at them or serve them with a webserver.
-tracker = dd.Trainer.ProgressTracker(logPlots=False,plotEvery=50,basePath='./tracker')
-metrics = ['output','cost','jaccard']; learning_rate = 1e-3
-trainer = dd.Trainer.Trainer(session,segmenter,trainingData,progressTracker=tracker,metrics=metrics,learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1e-08)
-# ---------------------------------------------------------------------
+	# Initialize all the newly created variables
+	session.run(tf.global_variables_initializer())
+	
+	# Save the trainer (and all it's components) before we use them
+	trainer.save()
+
+else:
+	# -------------- Load the trainer, tracker and network -----------------
+	trainer = dd.Trainer.Trainer.load('Segmenter2D.net/Training-Segmenter2D.trainer')
+	segmenter = trainer.net
+	# ---------------------------------------------------------------------
+
 
 print('\n\n\n')
 
 # ------------------------- Train -----------------------------------
-session.run(tf.global_variables_initializer())
-trainer.train(trainTime=1,examplesPerEpoch=5,trainingExamplesPerBatch=1)
+trainer.train(trainTime=0.1,examplesPerEpoch=5,trainingExamplesPerBatch=1)
 # ---------------------------------------------------------------------
+
+# ------------------------- Save the trainer, tracker and network -----------------------------------
+trainer.save()
+# ---------------------------------------------------------------------------------------------
 
 
 ex = trainingData.getTrainingExamples()

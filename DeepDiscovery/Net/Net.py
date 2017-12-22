@@ -5,54 +5,33 @@ import os.path
 from .. import DeepRoot
 from ..utility import onlyMyArguments
 import sys
+import tensorflow as tf
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 sys.setrecursionlimit(5000)
 
 class Net(DeepRoot.DeepRoot):
 	""" Abstract superclass representing an artificial neural network model. """
 
-	# class super1 (object):
-	#     def __new__(typ, *args, **kwargs):
-	#         obj = object.__new__(typ, *args, **kwargs)
-	#         obj.attr1 = []
-	#         return obj
-
 	def __new__(cls,*args,**kwargs):
 		self = super().__new__(cls)
-		self.__dict__['modelParameters'] = dict(output = None, y = None, 
+		self.__dict__['modelParameters'].update(dict(output = None, y = None, 
 									yp = None, x = None, 
-									net=None, cost=None, update = None)
-		self.__dict__['hyperParameters'] = dict()
+									net=None, cost=None, update = None))
 		self.__dict__['lockedParameters'] = set()
 		self.__dict__['requiredInputs'] = []
 		self.__dict__['trainingInputs'] = []
-		self.__dict__['name'] = None
-		#self.excludeFromPickle = []		
+		self.__dict__['excludeFromPickle'] = ['modelParameters']
 		return self
 
 	def __init__(self,name=None,**args):
-		self.name = name if name is not None else 'Net'
+		self.name = name if name is not None else self.__class__.__name__
 		self.hyperParameters.update(**args)
-		self.createModel(**self.hyperParameters)
+		self.createModel()
 		super().__init__()
-
-	def __getattr__(self,attr):
-		if attr in self.__dict__['modelParameters']:
-			return self.__dict__['modelParameters'].get(attr)
-		elif attr in self.__dict__['hyperParameters']:
-			return self.__dict__['hyperParameters'].get(attr)
-		else:
-			raise AttributeError(attr)
-
-	def __setattr__(self,attr,value):
-		if attr in self.__dict__:
-			self.__dict__[attr] = value
-		elif attr in self.modelParameters:
-			self.modelParameters[attr] = value
-		elif attr in self.hyperParameters:
-			self.hyperParameters[attr] = value
-		else:
-			raise AttributeError(attr)
 
 	@property
 	def parameters(self):
@@ -100,39 +79,46 @@ class Net(DeepRoot.DeepRoot):
 
 
 	# Pickling support
-	def __getstate__(self):
-		pickleDict = dict()
-		for k,v in self.__dict__.items():
-			if not issubclass(v.__class__,theano.compile.function_module.Function) \
-				and not k == 'net' \
-				and not k in self.excludeFromPickle:
-					pickleDict[k] = v
-		netParameters = numpy.array(lasagne.layers.get_all_param_values(self.net))
-		return (pickleDict,netParameters)
+	def saveCheckpoint(self,label=None,write_meta_graph=False):
+		netName = self.name + ('-{}'.format(label) if not label is None else '')
+		self.tfSaver.save(tf.get_default_session(),os.path.join(self.fname,netName),write_meta_graph=write_meta_graph)
+		
+	def loadCheckpoint(self,label=None,latest=True):
+		netName = self.name + ('-{}'.format(label) if not label is None else '')
+		if label is None and latest:
+			fname = tf.train.latest_checkpoint(self.fname)
+		else:
+			netName = self.name + ('-{}'.format(label) if not label is None else '')
+			fname = os.path.join(self.fname,netName)
+		logger.info("Loading checkpoint {}".format(fname))
+		self.tfSaver.restore(tf.get_default_session(),fname)
 
-	def __setstate__(self,params):
-		self.__dict__.update(params[0])
-		# Upgrade old objects
-		try:
-			if not hasattr(self,'inputDropout'):
-				self.inputDropout = self.dropout
-				self.internalDropout = False
-		except:
-			pass
-		self.createModel(**onlyMyArguments(self.createModel,self.__dict__))
-		lasagne.layers.set_all_param_values(self.net,params[1])
-
-
-	def save(self,path='.',fname=None,fast=False):
-		""" Save a network to the file fname at path.  If fname is not given, the network
-			will be saved as name.net"""
-		self.saveTime = time.time()
-		fname = fname if fname is not None else self.name + '.net'
-		with open(os.path.join(path,fname),'wb') as f:
+	def save(self,fname=None):
+		""" Save a network to the directory fname at path.  If fname is not given, the network
+			will be saved as name.net/"""
+		netName = self.name + '.net'
+		defaultFname = self.__dict__.get('fname',netName)
+		fname = defaultFname if fname is None else os.path.join(fname,netName) if fname.endswith(os.path.sep) else fname
+		self.__dict__['fname'] = fname
+		self.__dict__['saveTime'] = time.time()
+		os.makedirs(fname,mode=0o777,exist_ok=True)
+		with open(os.path.join(fname,netName),'wb') as f:
 			dill.dump(self,f,protocol=dill.HIGHEST_PROTOCOL)
-		return os.path.join(path,fname)
+		
+		variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
+		self.modelParameters['tfSaver'] = tf.train.Saver(var_list=variables)
+		self.saveCheckpoint(write_meta_graph=True)
+		return os.path.join(fname,netName)
 
 	@classmethod
-	def load(self,fname):
-		with open(fname,'rb') as f:
-			return dill.load(f)
+	def load(self,fname,path='',**args):
+		fname = fname[:-1] if fname.endswith(os.path.sep) else fname
+		netName = os.path.basename(fname)
+		with open(os.path.join(fname,netName),'rb') as f:
+			obj = dill.load(f)
+		obj.__dict__['fname'] = fname
+		obj.createModel()
+		variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=obj.name)
+		obj.modelParameters['tfSaver'] = tf.train.Saver(var_list=variables)
+		obj.loadCheckpoint()
+		return obj

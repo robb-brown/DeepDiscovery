@@ -9,7 +9,7 @@ setup(name='DeepDiscovery',
 	license='MIT',
 	packages=['DeepDiscovery'],
 	install_requires=[
-		'tensorflow-gpu',
+		#'tensorflow-gpu',
 		'matplotlib',
 		'nibabel',
 		'numpy',

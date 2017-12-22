@@ -2,89 +2,105 @@ import tensorflow as tf
 import time, datetime, os, dill, numpy, sys
 from collections import OrderedDict
 from .. import DeepRoot
+from .. import Net
 import logging
 logger = logging.getLogger(__name__)
 
 class Trainer(DeepRoot.DeepRoot):
+	
+	def __new__(cls,*args,**kwargs):
+		self = super().__new__(cls)
+		self.__dict__['modelParameters'].update(dict(session = None,
+													net = None,
+													updates = None,
+													metrics=None))
+		return self
+	
 
-	def __init__(self,session,net,examples,useAttention=False,progressTracker=None,name=None,metrics=dict(cost=None),**trainingArguments):
-		self.trainingParameters = dict(
-			session = session,
+	def __init__(self,net,examples,useAttention=False,progressTracker=None,name=None,metrics=dict(cost=None),**trainingArguments):
+		self.__dict__['examples'] = examples
+		self.__dict__['progressTracker'] = progressTracker
+		self.modelParameters.update(dict(
 			net = net,
 			updates = None,
-			metrics = metrics,
-		)
-		self.name = name if not name is None else 'Training-' + self.trainingParameters['net'].name
-		self.examples = examples
-		self.progressTracker = progressTracker
-		self.trainingArguments = trainingArguments
-		self.useAttention = useAttention
-		self.elapsed = 0.0; self.previouslyElapsed = 0.0
-		self.epoch = 0
-		self.startTime = None
-		self.params = None
-		self.excludeFromPickle = ['metricFragments','costFragment','params','updateFragment','trainingFunction','validationFunction']
-		self.initializeTraining(**trainingArguments)
-		self.setupMetrics(metrics)
+			metrics = None,
+		))
+		self.hyperParameters.update(dict(
+			trainingArguments = trainingArguments,
+			useAttention = useAttention,
+			elapsed = 0.0,
+			previouslyElapsed = 0.0,
+			epoch = 0,
+			startTime = None,
+			params = None,
+			netFile = None,
+			trackerFile = None,
+			metricNames = metrics,
+			netClass = net.__class__,
+			trackerClass = progressTracker.__class__,
+		))
+		self.name = name if not name is None else 'Training-' + self.net.name
+		self.initializeTraining()
+		self.setupMetrics()
 
 
-	def initializeTraining(self,**trainingArguments):
-		self.trainingParameters['trainingStep'] = tf.train.AdamOptimizer(**trainingArguments).minimize(self.trainingParameters['net'].cost)
-		self.trainingArguments = trainingArguments
+	def initializeTraining(self,):
+		with tf.variable_scope(self.name):
+			self.modelParameters['trainingStep'] = tf.train.AdamOptimizer(**self.trainingArguments).minimize(self.net.cost)
 
 
-	def setupMetrics(self,metrics=None):
-		metrics = self.trainingParameters['metrics'] if metrics is None else metrics
-		if not isinstance(metrics,dict):
-			metrics = dict([(metric,None) for metric in metrics])
-		net = self.trainingParameters['net']
-		for metric in metrics:
-			if metrics[metric] is None:
-				if metric == 'cost':
-					metrics[metric] = net.cost
-				elif metric == 'output':
-					metrics[metric] = [net.x,net.y,net.yp]
-				elif metric == 'accuracy':
-					correctPrediction = tf.equal(tf.argmax(net.y,axis=-1),tf.argmax(net.yp,axis=-1))
-					accuracy = tf.reduce_mean(tf.cast(correctPrediction,'float'))
-					metrics[metric] = accuracy
-				elif metric == 'jaccard':
-					output = tf.cast(tf.argmax(net.y,axis=-1), dtype=tf.float32)
-					truth = tf.cast(tf.argmax(net.yp,axis=-1), dtype=tf.float32)
-					intersection = tf.reduce_sum(tf.reduce_sum(tf.multiply(output, truth), axis=-1),axis=-1)
-					union = tf.reduce_sum(tf.reduce_sum(tf.cast(tf.add(output, truth)>= 1, dtype=tf.float32), axis=-1),axis=-1)
-					jaccard = tf.reduce_mean(intersection / union)
-					metrics[metric] = jaccard
-		self.trainingParameters['metrics'] = metrics
+	def setupMetrics(self):
+		with tf.variable_scope(self.name):
+			if not isinstance(self.metricNames,dict):
+				metrics = dict([(metric,None) for metric in self.metricNames])
+			else:
+				metrics = dict(self.metricNames)
+			net = self.net
+			for metric in metrics:
+				if metrics[metric] is None:
+					if metric == 'cost':
+						metrics[metric] = net.cost
+					elif metric == 'output':
+						metrics[metric] = [net.x,net.y,net.yp]
+					elif metric == 'accuracy':
+						correctPrediction = tf.equal(tf.argmax(net.y,axis=-1),tf.argmax(net.yp,axis=-1))
+						accuracy = tf.reduce_mean(tf.cast(correctPrediction,'float'))
+						metrics[metric] = accuracy
+					elif metric == 'jaccard':
+						output = tf.cast(tf.argmax(net.y,axis=-1), dtype=tf.float32)
+						truth = tf.cast(tf.argmax(net.yp,axis=-1), dtype=tf.float32)
+						intersection = tf.reduce_sum(tf.reduce_sum(tf.multiply(output, truth), axis=-1),axis=-1)
+						union = tf.reduce_sum(tf.reduce_sum(tf.cast(tf.add(output, truth)>= 1, dtype=tf.float32), axis=-1),axis=-1)
+						jaccard = tf.reduce_mean(intersection / union)
+						metrics[metric] = jaccard
+			self.metrics = metrics
 
 
 	def trainOne(self,examples=None,N=1):
-		tp = self.trainingParameters
 		if examples is None:
 			examples = self.examples.getTrainingExamples(N)
-		examples = tp['net'].preprocessInput(examples)
+		examples = self.net.preprocessInput(examples)
 		if not self.useAttention and 'attention' in examples:
 			examples.pop('attention')
 
 		# ROBB - update this with a utility function to match dictionary keys to their tensor flow named variables
 		# also, use requiredTrainingArguments
-		feed = {tp['net'].x:examples['input'],tp['net'].yp:examples['truth']};
-		_,ret = tp['session'].run([tp['trainingStep'],tp['metrics']],feed_dict=feed)
+		feed = {self.net.x:examples['input'],self.net.yp:examples['truth']};
+		_,ret = tf.get_default_session().run([self.trainingStep,self.metrics],feed_dict=feed)
 		return ret
 
 
 	def validate(self,examples=None,N=1):
-		tp = self.trainingParameters
 		if examples is None:
 			examples = self.examples.getValidationExamples(N)
-		examples = tp['net'].preprocessInput(examples)
+		examples = self.net.preprocessInput(examples)
 		if not self.useAttention and 'attention' in examples:
 			examples.pop('attention')
 
 		# ROBB - update this with a utility function to match dictionary keys to their tensor flow named variables
 		# also, use requiredTrainingArguments
-		feed = {tp['net'].x:examples['input'],tp['net'].yp:examples['truth']};
-		ret = tp['session'].run(tp['metrics'],feed_dict=feed)
+		feed = {self.net.x:examples['input'],self.net.yp:examples['truth']};
+		ret = tf.get_default_session().run(self.metrics,feed_dict=feed)
 		return ret
 
 
@@ -148,55 +164,82 @@ class Trainer(DeepRoot.DeepRoot):
 
 
 	# Pickling support
-	def __getstate__(self):
-		pickleDict = dict()
-		for k,v in self.__dict__.items():
-			if not v in [self.params] \
-				and not issubclass(v.__class__,theano.compile.function_module.Function) \
-				and not (k in self.excludeFromPickle or v in self.excludeFromPickle):
-					pickleDict[k] = v
-		return pickleDict
-
 	def __setstate__(self,params):
-		self.__dict__.update(params)
+		super().__setstate__(params)
 		self.previouslyElapsed += self.elapsed; self.elapsed = 0.0
 		self.epoch = 0
 
-		# DEBUG - jump start for old saved objects
-		# self.trainingArguments = dict(learning_rate=0.0001, beta1=0.9, beta2=0.999, epsilon=1e-08)
-		# self.examples.mode = '2d'
-		# self.examples.attention = None
-		# self.initializeTraining(**self.trainingArguments)
+	def saveCheckpoint(self,label=None,write_meta_graph=False):
+		trainerName = self.name + '.trainer'
+		name = self.name + ('-{}'.format(label) if not label is None else '')
+		self.tfSaver.save(tf.get_default_session(),os.path.join(self.fname,trainerName,name),write_meta_graph=write_meta_graph)
+		self.net.saveCheckpoint(label=label,write_meta_graph=write_meta_graph)
+
+	def loadCheckpoint(self,label=None,latest=True):
+		trainerName = self.name + '.trainer'
+		if label is None and latest:
+			fname = tf.train.latest_checkpoint(os.path.join(self.fname,trainerName))
+		else:
+			name = self.name + ('-{}'.format(label) if not label is None else '')
+			fname = os.path.join(self.fname,trainerName,name)
+		logger.info("Loading trainer checkpoint {}".format(fname))
+		self.tfSaver.restore(tf.get_default_session(),fname)
+		self.net.loadCheckpoint(label=label,latest=latest)
 
 
-	def save(self,path='.',fname=None):
-		""" Save a trainer to disk.  The trainer creates the directory [path]/[fname] and
-			saves itself and it's net into that directory in separate files.
-			The return value is the path to the trainer file."""
-		self.saveTime = time.time()
-		fname = fname if fname is not None else self.name
-		if not os.path.exists(os.path.join(path,fname)):
-			os.makedirs(os.path.join(path,fname))
-		netname = self.net.name + '.net'
-		self.net.save(path=os.path.join(path,fname),fname=netname)
-		net = self.net
+	def save(self,fname=None):
+		""" Save a trainer to disk.  The trainer creates it's directory and
+			saves it's net into that directory. The trainer is saved into
+			a .trainer subdirectory.
+			The return value is the path to the DD directory."""
+		# create the net directory
+		netName = self.net.name + '.net'
+		trainerName = self.name + '.trainer'
+		defaultFname = self.__dict__.get('fname',netName)
+		fname = defaultFname if fname is None else os.path.join(fname,netName) if fname.endswith(os.path.sep) else fname
+		self.__dict__['fname'] = fname
+		self.__dict__['saveTime'] = time.time()
+
+		os.makedirs(os.path.join(fname,trainerName),mode=0o777,exist_ok=True)
+		
+		# save the net and tracker and replace their references in the trainer with file names
 		self.netClass = self.net.__class__
-		self.net = netname
-		with open(os.path.join(path,fname,fname+'.trainer'),'wb') as f:
+		self.trackerClass = self.progressTracker.__class__
+		self.netFile = self.net.save(fname)
+		self.trackerFile = self.progressTracker.save(fname)
+		
+		with open(os.path.join(fname,trainerName,trainerName),'wb') as f:
 			dill.dump(self,f,protocol=dill.HIGHEST_PROTOCOL)
-		self.net = net
-		return os.path.join(path,fname,fname+'.trainer')
+
+		variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
+		self.modelParameters['tfSaver'] = tf.train.Saver(var_list=variables)
+		self.saveCheckpoint(write_meta_graph=True)
+		
+		return os.path.join(fname,trainerName,trainerName)
+
+
+	# Load not updated yet
 
 	@classmethod
 	def load(self,fname):
-		""""fname is the full path to a trainer file.  The trainer will load it's
+		""""fname is the full path to a trainer dir.  The trainer will load it's
 		accompanying net file, which should be in the same directory."""
-		with open(fname,'rb') as f:
+		fname = fname[:-1] if fname.endswith(os.path.sep) else fname
+		trainerName = os.path.basename(fname)
+		fname = os.path.dirname(fname)
+		with open(os.path.join(fname,trainerName,trainerName),'rb') as f:
 			trainer = dill.load(f)
-		path = os.path.dirname(fname)
-		if os.path.exists(os.path.join(path,trainer.net)):
-			trainer.net = trainer.netClass.load(os.path.join(path,trainer.net))
-			trainer.initializeTraining(**trainer.trainingArguments)
-		else:
+		trainer.__dict__['fname'] = fname
+		try:
+			trainer.net = trainer.netClass.load(os.path.join(fname))
+			trainer.progressTracker = trainer.trackerClass.load(os.path.join(fname,os.path.basename(trainer.trackerFile)))
+			trainer.initializeTraining()
+			trainer.setupMetrics()
+			variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=trainer.name)
+			trainer.modelParameters['tfSaver'] = tf.train.Saver(var_list=variables)
+			trainer.loadCheckpoint()
+		except:
+			logger.exception('Failed to load net')
 			logger.warning('*** Could not locate saved network. Trainer will be nonfunctional. ***')
 		return trainer
+
