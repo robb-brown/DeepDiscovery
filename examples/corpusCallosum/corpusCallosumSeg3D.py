@@ -46,8 +46,8 @@ trainingData.save('corpusCallosum.data')
 # multiple of 2**depth where depth is the number of downsampling steps.  For now, this
 # is done by the data object.  This will be moved to the network preprocessing though.
 # If we're in 2d mode we only need to pad x and y.
-trainingData.mode = '2d'
-trainingData.depth = 3
+trainingData.mode = '3d'
+trainingData.depth = 1
 # ---------------------------------------------------------------------------------
 
 session = tf.InteractiveSession()
@@ -60,8 +60,8 @@ if 1:
 	# the U net. We give our network a name so that it is distinct from others we might load or create
 	# (it puts its tensorflow variables into a variable scope based on the name) and will also
 	# default to saving itself under that name.
-	filterPlan = [10,20,30]; filterSize = 5; postUDepth = 1
-	segmenter = dd.Net.Segmenter2D(filterPlan=filterPlan,filterSize=filterSize,postUDepth=postUDepth,name='CorpusCallosum2D')
+	filterPlan = [10]; filterSize = 5; postUDepth = 1
+	segmenter = dd.Net.Segmenter3D(filterPlan=filterPlan,filterSize=filterSize,postUDepth=postUDepth,name='CorpusCallosum2D')
 	# ---------------------------------------------------------------------
 
 	# -----------------------  Creating a Trainer and Tracker------------------------

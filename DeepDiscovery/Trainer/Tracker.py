@@ -134,7 +134,7 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		else:									# batch, z,y,x,channel
 			inputImage = inputImage[0,...,0]
 			output = output[0,...,1]
-			truth = where(truth[0,...,1]>0.5,1,0)
+			truth = numpy.where(truth[0,...,1]>0.5,1,0)
 
 		#  Axial
 		axis = self.figures['output'].add_subplot(2,2,1);
