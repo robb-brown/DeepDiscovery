@@ -1,10 +1,41 @@
 import tensorflow as tf
 import time, datetime, os, dill, numpy, sys
 from collections import OrderedDict
-from .. import DeepRoot
-from .. import Net
+from .. import DeepRoot, Net, utility
 import logging
 logger = logging.getLogger(__name__)
+
+class CostFunction(DeepRoot.DeepRoot):
+	
+	def __new__(cls,*args,**kwargs):
+		self = super().__new__(cls)
+		self.__dict__['modelParameters'].update(dict(requiredInputs=[]))
+		return self
+	
+	def create(self):
+		raise NotImplementedError
+
+
+class CrossEntropyCost(CostFunction):
+	
+	def __init__(self,y,yp,attention=False):
+		self.modelParameters.update(dict(
+			y = y,
+			yp = yp
+		))
+		self.__dict__['attention'] = attention
+	
+	def create(self):
+		cost = tf.keras.losses.categorical_crossentropy(self.yp,self.y)
+		if self.attention:
+			self.modelParameters['attentionOp'] = tf.placeholder('float',shape=self.yp.get_shape(),name='attention')
+			cost *= self.attentionOp[...,0]
+			self.requiredInputs.append(self.attentionOp)
+		cost = tf.reduce_mean(cost)
+		self.requiredInputs += [self.yp]
+		return cost
+
+
 
 class Trainer(DeepRoot.DeepRoot):
 	
@@ -12,12 +43,13 @@ class Trainer(DeepRoot.DeepRoot):
 		self = super().__new__(cls)
 		self.__dict__['modelParameters'].update(dict(session = None,
 													net = None,
+													costOp = None,
 													updates = None,
 													metrics=None))
 		return self
 	
 
-	def __init__(self,net,examples,useAttention=False,progressTracker=None,name=None,metrics=dict(cost=None),**trainingArguments):
+	def __init__(self,net,cost,examples,progressTracker=None,name=None,metrics=dict(cost=None),**trainingArguments):
 		self.__dict__['examples'] = examples
 		self.__dict__['progressTracker'] = progressTracker
 		self.modelParameters.update(dict(
@@ -27,7 +59,6 @@ class Trainer(DeepRoot.DeepRoot):
 		))
 		self.hyperParameters.update(dict(
 			trainingArguments = trainingArguments,
-			useAttention = useAttention,
 			elapsed = 0.0,
 			previouslyElapsed = 0.0,
 			epoch = 0,
@@ -35,6 +66,7 @@ class Trainer(DeepRoot.DeepRoot):
 			params = None,
 			netFile = None,
 			trackerFile = None,
+			cost = cost,
 			metricNames = metrics,
 			netClass = net.__class__,
 			trackerClass = progressTracker.__class__,
@@ -46,7 +78,8 @@ class Trainer(DeepRoot.DeepRoot):
 
 	def initializeTraining(self,):
 		with tf.variable_scope(self.name):
-			self.modelParameters['trainingStep'] = tf.train.AdamOptimizer(**self.trainingArguments).minimize(self.net.cost)
+			self.modelParameters['costOp'] = self.cost.create()
+			self.modelParameters['trainingStep'] = tf.train.AdamOptimizer(**self.trainingArguments).minimize(self.costOp)
 
 
 	def setupMetrics(self):
@@ -59,7 +92,7 @@ class Trainer(DeepRoot.DeepRoot):
 			for metric in metrics:
 				if metrics[metric] is None:
 					if metric == 'cost':
-						metrics[metric] = net.cost
+						metrics[metric] = self.costOp
 					elif metric == 'output':
 						metrics[metric] = [net.x,net.y,net.yp]
 					elif metric == 'accuracy':
@@ -74,18 +107,15 @@ class Trainer(DeepRoot.DeepRoot):
 						jaccard = tf.reduce_mean(intersection / union)
 						metrics[metric] = jaccard
 			self.metrics = metrics
+		
 
 
 	def trainOne(self,examples=None,N=1):
 		if examples is None:
 			examples = self.examples.getTrainingExamples(N)
 		examples = self.net.preprocessInput(examples)
-		if not self.useAttention and 'attention' in examples:
-			examples.pop('attention')
 
-		# ROBB - update this with a utility function to match dictionary keys to their tensor flow named variables
-		# also, use requiredTrainingArguments
-		feed = {self.net.x:examples['input'],self.net.yp:examples['truth']};
+		feed = utility.buildFeed(self.net.requiredInputs+self.cost.requiredInputs,examples)
 		_,ret = tf.get_default_session().run([self.trainingStep,self.metrics],feed_dict=feed)
 		return ret
 
@@ -94,12 +124,8 @@ class Trainer(DeepRoot.DeepRoot):
 		if examples is None:
 			examples = self.examples.getValidationExamples(N)
 		examples = self.net.preprocessInput(examples)
-		if not self.useAttention and 'attention' in examples:
-			examples.pop('attention')
 
-		# ROBB - update this with a utility function to match dictionary keys to their tensor flow named variables
-		# also, use requiredTrainingArguments
-		feed = {self.net.x:examples['input'],self.net.yp:examples['truth']};
+		feed = utility.buildFeed(self.net.requiredInputs+self.cost.requiredInputs,examples)
 		ret = tf.get_default_session().run(self.metrics,feed_dict=feed)
 		return ret
 
@@ -150,10 +176,9 @@ class Trainer(DeepRoot.DeepRoot):
 				elapsedModifier,elapsedUnits = (1.,'s') if totalElapsed < 60*5 \
 					else (1./60,'m') if totalElapsed < 3600*2 \
 					else (1./3600,'h')
-				oldName = self.name; self.name = '{}_{:0.2fs}'.format(oldName,totalElapsed*elapsedModifier,elapsedUnits)
-				fname = self.save(path='./checkpoint')
-				logger.info("************ Checkpoint saved as {} ************".format(fname))
-				self.name = oldName
+				checkpointLabel = '{:0.2fs}'.format(totalElapsed*elapsedModifier,elapsedUnits)
+				self.net.saveCheckpoint(label=checkpointLabel)
+				logger.info("************ Checkpoint {} saved ************".format(checkpointLabel))
 				lastSave = self.elapsed
 
 		example = self.examples.getValidationExamples(validationExamplesPerBatch)

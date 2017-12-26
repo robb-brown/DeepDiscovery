@@ -1,15 +1,10 @@
-import numpy
-import math
-import copy
+import numpy,scipy
+import math, copy, sys, time, datetime, os
 import nibabel as nib
 from collections import OrderedDict
 import dill
-import sys
-import time
-import datetime
-import os
 
-from ..utility import *
+from .. import utility
 
 import logging
 
@@ -114,14 +109,13 @@ class TrainingData(object):
 
 class ImageTrainingData(TrainingData):
 
-	def __init__(self,examples,reserveForValidation=0.1,reserveForTest=0.1,depth=1,mode='2d',padShape=None,cropTo=None,truthComponents=None,gentleCoding=0.9,attention=None,balanceClasses=False,standardize=True,basepath='.',**attentionArguments):
+	def __init__(self,examples,reserveForValidation=0.1,reserveForTest=0.1,depth=1,mode='2d',padShape=None,cropTo=None,truthComponents=None,gentleCoding=0.9,attention=None,balanceClasses=False,standardize=True,basepath='.'):
 		self.padShape = padShape
 		super(ImageTrainingData,self).__init__(examples,reserveForValidation,reserveForTest)
 		self.basepath = basepath
 		self.depth = depth
 		self.mode = mode
 		self.attention = attention
-		self.attentionArguments = attentionArguments
 		self.cropTo = cropTo
 		self.slice = [slice(ax[0],ax[1]) for ax in self.cropTo] if self.cropTo is not None else None
 		self.standardize = standardize
@@ -150,29 +144,6 @@ class ImageTrainingData(TrainingData):
 			t2 = time.time()
 			logger.debug("Loading example {} took {:0.2f} ms".format(os.path.abspath(example['input']),(t2-t1)*1000))
 
-			if self.standardize:
-				x = x - numpy.average(x) / numpy.std(x)
-
-			# Cropping
-			if self.slice is not None:
-				slc = [slice(0,x.shape[i]) for i in range(len(x.shape)-len(self.slice))] + self.slice
-				x = x[slc];
-
-				if y is not None:
-					slc = [slice(None) for i in range(len(y.shape)-len(self.slice))] + self.slice
-					y = y[slc]
-
-			# ROBB - move padding into network preprocessing
-			x = padImage(x,depth=self.depth,mode=self.mode,shape=self.padShape)
-			y = padImage(y,depth=self.depth,mode=self.mode,shape=self.padShape) if y is not None else y
-
-			if not self.attention is None and y is not None:
-				attention = example.get('attention',None)
-				if attention is None:
-					attention = self.attention(y,**self.attentionArguments) if callable(self.attention) else self.attention
-				attention = padImage(attention,depth=self.depth,mode=self.mode)
-				attentions.append(attention)
-
 			xs.append(x); ys.append(y)
 
 		x = numpy.array(xs); y = numpy.array(ys)
@@ -180,21 +151,12 @@ class ImageTrainingData(TrainingData):
 		# Convert y to one hot
 		if not self.truthComponents is None:
 			y.shape = y.shape[0:-1]
-			y = convertToOneHot(y,coding=self.truthComponents,gentleCoding=self.gentleCoding)
+			y = utility.convertToOneHot(y,coding=self.truthComponents,gentleCoding=self.gentleCoding)
 		
-		# Everything should be multichannel, channel last at this point ROBB fix attention
-		
-		example = OrderedDict(input=x,truth=y)
+		example = dict(input=x,truth=y,dimensionOrder=['b','z','y','x','c'])
 		
 		if not self.attention is None:
-			example['attention'] = numpy.array(attentions)
-		
-		# this is the responsibility of the network
-		# if self.mode == '2d':
-		# 	example['input'] = example['input'].reshape([-1]+list(numpy.array(example['input'].shape)[2:]))
-		# 	example['truth'] = example['truth'].reshape([-1]+list(numpy.array(example['truth'].shape)[2:]))
-		# 	if 'attention' in example:
-		# 		example['attention'] = numpy.transpose(example['attention'],[0,2,1,3,4]).reshape([-1]+list(numpy.array(example['attention'].shape)[[1,3,4]]))
+			example['attention'] = self.attention.generate(example)
 
 		return example
 
@@ -229,6 +191,177 @@ class PandasData(TrainingData):
 		self.allocateExamples()
 
 	def preprocessExamples(self,examples):
-		examples = OrderedDict(input=numpy.array(list(examples[:,0])).astype(theano.config.floatX),truth=numpy.array(list(examples[:,1])).astype(theano.config.floatX))
+		examples = dict(input=numpy.array(list(examples[:,0])).astype(theano.config.floatX),truth=numpy.array(list(examples[:,1])).astype(theano.config.floatX))
 		examples.update(self.extraArgs)
 		return examples
+
+
+
+
+class ImagePreprocessor(object):
+
+	def __init__(self,dimensionOrder=['b','z','y','x','c'],requiredDimensionOrder=None,crop=None,standardize=None,pad=None,mode='3d'):
+		"""
+			crop is a dictionary with keys that are single character dimension codes and values are 
+				arguments to slice() (start, end, [step]).
+
+			standardize is a function that takes the data and dimensionOrder as arguments and 
+				returns a standardized version.
+
+			pad is False or a depth for standard CNN hierarchy.  
+
+		"""
+		self.dimensionOrder = dimensionOrder; self.requiredDimensionOrder = requiredDimensionOrder; 
+		self.crop = crop; self.standardize=standardize; self.pad = pad; self.mode = mode
+
+
+	def process(self,x,dimensionOrder=None,requiredDimensionOrder=None,standardize=None,oneHot=False):
+		requiredDimensionOrder = requiredDimensionOrder if not requiredDimensionOrder is None else self.requiredDimensionOrder
+		dimensionOrder = dimensionOrder if not dimensionOrder is None else self.dimensionOrder
+		standardize = False if oneHot else self.standardize if standardize is None else standardize
+		
+
+		# Cropping
+		if not (self.crop is None or self.crop == False):
+			slices = [slice(*self.crop.get(dimension,[None])) for dimension in dimensionOrder]
+			x = x[slices]
+
+		# standardization
+		if not (standardize is None or standardize == False):
+			if hasattr(self.standardize,'standardize'):
+				x = self.standardize.standardize(x,dimensionOrder)
+			else:
+				x = self.standardize(x,dimensionOrder)
+
+		# padding
+		if not (self.pad is None or self.pad == False):
+			spatialAxes = [dimensionOrder.index(d) for d in (['z','y','x'] if self.mode == '2d' else ['z','y','x'])]
+			if isinstance(self.pad,int):
+				x = utility.padImage(x,depth=self.pad,mode=self.mode,spatialAxes=spatialAxes,oneHot=oneHot)
+			else:
+				x = utility.padImage(x,mode=self.mode,shape=self.pad,spatialAxes=spatialAxes,oneHot=oneHot)
+
+		if (not requiredDimensionOrder is None) and (not dimensionOrder == requiredDimensionOrder):
+			# Check for missing dimensions
+			for d,dim in enumerate(requiredDimensionOrder):
+				if not dim in dimensionOrder:
+					x = numpy.expand_dims(x,-1)
+					dimensionOrder.append(dim)
+			
+			# roll any extra dimensions into the batch dimension
+			extraDimensions = [dim for dim in dimensionOrder if not dim in requiredDimensionOrder]
+			if len(extraDimensions) > 0:
+				tempDimensions = ['b'] + extraDimensions + [dim for dim in requiredDimensionOrder if not dim == 'b']
+				twiddler = [dimensionOrder.index(dim) for dim in tempDimensions]
+				x = x.transpose(twiddler)
+				x.shape = [-1] + [dim for d,dim in enumerate(x.shape) if tempDimensions[d] in requiredDimensionOrder and not tempDimensions[d] == 'b']
+				dimensionOrder = [dim for dim in dimensionOrder if not dim in extraDimensions]
+			
+			twiddler = [dimensionOrder.index(dim) for dim in requiredDimensionOrder]
+			x = x.transpose(twiddler)
+
+		return x
+
+
+	def restore(self,x,originalShape=None,dimensionOrder=None,requiredDimensionOrder=None):
+		requiredDimensionOrder = requiredDimensionOrder if not requiredDimensionOrder is None else self.dimensionOrder
+		dimensionOrder = dimensionOrder if not dimensionOrder is None else self.requiredDimensionOrder if not self.requiredDimensionOrder is None else requiredDimensionOrder
+
+		# padding
+		if not (self.pad is None or self.pad == False):
+			if self.crop:
+				oShape = list(originalShape)
+				for d in self.crop.keys():
+					oShape[dimensionOrder.index(d)] = self.crop[d][1]-self.crop[d][0]
+			else:
+				oShape = originalShape
+
+			spatialAxes = [dimensionOrder.index(d) for d in (['y','x'] if self.mode == '2d' else ['z','y','x'])]
+			if isinstance(self.pad,int):
+				x = utility.depadImage(x,oShape,spatialAxes=spatialAxes)
+			else:
+				x = utility.depadImage(x,oShape,spatialAxes=spatialAxes)
+
+		# Cropping
+		if not (self.crop is None or self.crop == False):
+			slices = [slice(*self.crop.get(dimension,[None])) for dimension in dimensionOrder]
+			x2 = numpy.zeros(originalShape,x.dtype)
+			x2[slices] = x
+			x = x2
+
+		# robb - need to fix this so that it unrolls dimensions out of batch instead of inserting empty ones
+		if (not requiredDimensionOrder is None) and (not dimensionOrder == requiredDimensionOrder):
+			# Check for missing dimensions
+			for d,dim in enumerate(requiredDimensionOrder):
+				if not dim in dimensionOrder:
+					x = numpy.expand_dims(x,-1)
+					dimensionOrder.append(dim)
+
+			# roll any extra dimensions into the batch dimension
+			extraDimensions = [dim for dim in dimensionOrder if not dim in requiredDimensionOrder]
+			if len(extraDimensions) > 0:
+				tempDimensions = ['b'] + extraDimensions + [dim for dim in requiredDimensionOrder if not dim == 'b']
+				twiddler = [dimensionOrder.index(dim) for dim in tempDimensions]
+				x = x.transpose(twiddler)
+				x.shape = [-1] + [dim for d,dim in enumerate(x.shape) if tempDimensions[d] in requiredDimensionOrder and not tempDimensions[d] == 'b']
+				dimensionOrder = [dim for dim in dimensionOrder if not dim in extraDimensions]
+
+			twiddler = [dimensionOrder.index(dim) for dim in requiredDimensionOrder]
+			x = x.transpose(twiddler)
+
+		return x
+
+
+class SpotStandardization(object):
+
+	def __init__(self,axes=['z','y','x'],centre=0.5,method='median'):
+		self.axes = axes; self.centre = 0.5; self.method = method
+
+	def standardize(self,x,dimensionOrder):
+		slices = [slice(int(round(x.shape[d]*self.centre/2)),int(round(x.shape[d]*self.centre/2*3))) if dim in self.axes else slice(None) for d,dim in enumerate(dimensionOrder)]
+		centre = x[slices]; 
+		standardizerShape = [1 if dimensionOrder[d] in self.axes else dim for d,dim in enumerate(x.shape)]
+		overAxes = tuple([dimensionOrder.index(d) for d in self.axes])
+
+		if self.method == 'mean':
+			average = numpy.reshape(numpy.average(centre,axis=overAxes),standardizerShape)
+			std = numpy.reshape(numpy.std(centre,axis=overAxes),standardizerShape)
+		else:
+			average = numpy.reshape(numpy.median(centre,axis=overAxes),standardizerShape)
+			std = numpy.reshape(numpy.percentile(centre, 75,axis=overAxes) - numpy.percentile(centre, 25,axis=overAxes),standardizerShape)			
+		x = (x - average) / std
+		return x
+
+
+
+
+class EdgeBiasedAttention(object):
+	
+	def __init__(self,edgeFalloff=10,background=0.01,approximate=True,balanceClasses=True,gentleBalance=10.0):
+		self.edgeFalloff = edgeFalloff; self.background = background; 
+		self.approximate = approximate
+		self.balanceClasses = balanceClasses; self.gentleBalance = gentleBalance
+	
+	def generate(self,example):
+		y = numpy.around(example['truth'][...,0]).astype(numpy.uint8)
+		if self.approximate:
+			dist1 = scipy.ndimage.distance_transform_cdt(y[0])
+			dist2 = scipy.ndimage.distance_transform_cdt(numpy.where(y>0,0,1))
+		else:
+			dist1 = scipy.ndimage.distance_transform_edt(y, sampling=[1,1,1])
+			dist2 = scipy.ndimage.distance_transform_edt(numpy.where(y>0,0,1), sampling=[1,1,1])
+		dist = dist1+dist2
+		attention = math.e**(1-dist/float(self.edgeFalloff)) + self.background
+		if self.balanceClasses:
+			classBalance = numpy.sum(attention*(1.0-y)) / numpy.sum(attention*y)
+			if classBalance > 1 and classBalance > self.gentleBalance:
+				classBalance /= self.gentleBalance
+			elif classBalance < 1 and classBalance < 1./self.gentleBalance:
+				classBalance *= self.gentleBalance
+			attention = attention * (1+(y*classBalance))
+		attention /= numpy.average(attention)
+		#print "achieved class balance is %0.2f" % (numpy.sum(attention*(1.0-y)) / numpy.sum(attention*y))
+		attention = numpy.reshape(attention,y.shape)
+		attention = numpy.expand_dims(attention,-1)
+		return attention
+		

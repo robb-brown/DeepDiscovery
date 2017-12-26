@@ -147,7 +147,7 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		axis.imshow(output[midSlice],cmap=cmap,origin='lower',alpha=0.3,vmin=0,vmax=1.0)
 		axis.contour(truth[midSlice],colors=['b'],alpha=0.1,linewidths=1,origin='lower')
 		#axis.imshow(truth[midSlice],cmap=pylab.cm.gray,origin='lower')
-		pylab.figure('Hist'); pylab.clf(); pylab.hist(output[midSlice].ravel(),100,log=True,normed=True)
+		#pylab.figure('Hist'); pylab.clf(); pylab.hist(output[midSlice].ravel(),100,log=True,normed=True)
 
 		# Coronal
 		axis = self.figures['output'].add_subplot(2,2,2);

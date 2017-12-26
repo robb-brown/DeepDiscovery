@@ -19,6 +19,7 @@ setup(name='DeepDiscovery',
 		'tinymongo',
 		'dill',
 		'colormath',
+		'scipy',
 	],
 	zip_safe=False)
 

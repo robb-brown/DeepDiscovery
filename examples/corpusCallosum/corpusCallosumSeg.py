@@ -32,10 +32,8 @@ examples = [dict(input=i,truth=i.replace('.nii.gz','_cc.nii.gz')) for i in image
 # We're training a segmenter, so we need our truth image converted into one-hot (one channel per class).
 # We have two classes (not corpus callosum = 0 and corpus callosum = 1) so we set truthComponents to
 # [1,0].  The first channel will be the positive mask.
-trainingData = dd.Data.ImageTrainingData(examples,reserveForValidation=0.1,reserveForTest=0,truthComponents=[0,1],gentleCoding=False)
+trainingData = dd.Data.ImageTrainingData(examples,reserveForValidation=0.1,reserveForTest=0,truthComponents=[0,1],gentleCoding=0.9)
 
-# You can test out your trainingData object by asking for an example:
-example = trainingData.getTrainingExamples(1)
 
 # Let's save this training data.  Since we asked DeepDiscovery to do the train/test
 # allocation, for consistency we might want to use this same object for training
@@ -48,6 +46,11 @@ trainingData.save('corpusCallosum.data')
 # If we're in 2d mode we only need to pad x and y.
 trainingData.mode = '2d'
 trainingData.depth = 3
+attention = dd.Data.EdgeBiasedAttention(); trainingData.attention = attention
+
+# You can test out your trainingData object by asking for an example:
+example = trainingData.getTrainingExamples(1)
+
 # ---------------------------------------------------------------------------------
 
 session = tf.InteractiveSession()
@@ -60,8 +63,8 @@ if 1:
 	# the U net. We give our network a name so that it is distinct from others we might load or create
 	# (it puts its tensorflow variables into a variable scope based on the name) and will also
 	# default to saving itself under that name.
-	filterPlan = [10,20,30]; filterSize = 5; postUDepth = 1
-	segmenter = dd.Net.Segmenter2D(filterPlan=filterPlan,filterSize=filterSize,postUDepth=postUDepth,name='CorpusCallosum2D')
+	filterPlan = [10,20,30]; filterSize = 5; postUDepth = 1; standardize=True
+	segmenter = dd.Net.Segmenter2D(filterPlan=filterPlan,filterSize=filterSize,postUDepth=postUDepth,standardize=standardize,name='CorpusCallosum2D')
 	# ---------------------------------------------------------------------
 
 	# -----------------------  Creating a Trainer and Tracker------------------------
@@ -69,8 +72,9 @@ if 1:
 	# the performance of the network as it is trained, creates graphs, and dumps these to files
 	# on disk so we can look at them or serve them with a webserver.
 	tracker = dd.Trainer.ProgressTracker(logPlots=False,plotEvery=50,basePath='./tracker')
+	cost = dd.Trainer.CrossEntropyCost(y=segmenter.y,yp=segmenter.yp,attention=True)
 	metrics = ['output','cost','jaccard']; learning_rate = 1e-3
-	trainer = dd.Trainer.Trainer(segmenter,trainingData,progressTracker=tracker,metrics=metrics,learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1e-08)
+	trainer = dd.Trainer.Trainer(net=segmenter,cost=cost,examples=trainingData,progressTracker=tracker,metrics=metrics,learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1e-08)
 	# ---------------------------------------------------------------------
 
 	# Initialize all the newly created variables

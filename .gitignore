@@ -11,3 +11,4 @@ ddenv/*
 *.data
 /examples/*/*.net
 /examples/*/*.data
+todo.txt

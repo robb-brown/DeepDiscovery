@@ -35,30 +35,41 @@ def computePad(dims,depth,mode='2d',shape=None):
 	return z,y,x,z1,z2,y1,y2,x1,x2
 
 
-def padImage(img,depth,mode='2d',shape=None):
+def padImage(img,depth,mode='2d',spatialAxes=[0,1,2],shape=None,oneHot=False):
 	"""Pads (or crops) an image so it is evenly divisible by 2**depth.  If mode == '2d' then z is not padded"""
 	if not shape is None:
-		for axis in [0,1,2] if mode == '3d' else [1,2]:
+		for axis in spatialAxes[-3:] if mode == '3d' else spatialAxes[-2:]:
 			if img.shape[axis] > shape[axis]:
 				start = int(numpy.trunc((img.shape[axis]-shape[axis]) / 2));
 				img = numpy.rollaxis(img,axis)[start:start+shape[axis]]
 				img = numpy.rollaxis(img,0,len(img.shape)+axis+1)
 
-	z,y,x,z1,z2,y1,y2,x1,x2 = computePad(img.shape,depth,mode,shape)
+	z,y,x,z1,z2,y1,y2,x1,x2 = computePad(numpy.array(img.shape)[[spatialAxes]],depth,mode,shape)
 	dims = [(0,0) for i in img.shape]
-	dims[0] = (z1,z2); dims[1] = (y1,y2); dims[2] = (x1,x2)
-	return numpy.pad(img,dims,'constant')
-
-
-def depadImage(img,originalShape):
-	""" This isn't quite right.  One pixel difference """
-	z1=z2=y1=y2=x1=x2=0
-	z,y,x = img.shape
-	z1 = int(numpy.floor((z - originalShape[0])/2)); z2 = int(numpy.ceil((z - originalShape[0])/2))
-	y1 = int(numpy.floor((y - originalShape[1])/2)); y2 = int(numpy.ceil((y - originalShape[1])/2))
-	x1 = int(numpy.floor((x - originalShape[2])/2)); x2 = int(numpy.ceil((x - originalShape[2])/2))
-	ret = img[z1:z-z2,y1:y-y2,x1:x-x2]
+	dims[spatialAxes[0]] = (z1,z2); dims[spatialAxes[1]] = (y1,y2); dims[spatialAxes[2]] = (x1,x2)
+	if oneHot:
+		ret = numpy.pad(img,dims,'edge')
+	else:
+		ret = numpy.pad(img,dims,'constant')
 	return ret
+	
+
+
+def depadImage(img,originalShape,spatialAxes=[0,1,2]):
+	z1=z2=y1=y2=x1=x2=0
+	z,y,x = numpy.array(img.shape)[spatialAxes]
+	z1 = int(numpy.floor((z - originalShape[spatialAxes[0]])/2)); z2 = int(numpy.ceil((z - originalShape[spatialAxes[0]])/2))
+	y1 = int(numpy.floor((y - originalShape[spatialAxes[1]])/2)); y2 = int(numpy.ceil((y - originalShape[spatialAxes[1]])/2))
+	x1 = int(numpy.floor((x - originalShape[spatialAxes[2]])/2)); x2 = int(numpy.ceil((x - originalShape[spatialAxes[2]])/2))
+	slices = list(numpy.repeat(slice(None),len(img.shape)))
+	slices[spatialAxes[0]] = slice(z1,z-z2); slices[spatialAxes[1]] = slice(y1,y-y2); slices[spatialAxes[2]] = slice(x1,x-x2);  
+	ret = img[slices]
+	return ret
+	
+	
+def buildFeed(requiredInputs,example,**args):
+	args.update(example)
+	return dict([(requiredInput,args.get(requiredInput.name.split(':')[0].split('_')[0].split('/')[-1],None)) for requiredInput in requiredInputs])
 
 
 def reportLayerSize(outputShape,annotation=''):

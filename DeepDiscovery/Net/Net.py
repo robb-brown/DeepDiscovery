@@ -20,17 +20,16 @@ class Net(DeepRoot.DeepRoot):
 		self = super().__new__(cls)
 		self.__dict__['modelParameters'].update(dict(output = None, y = None, 
 									yp = None, x = None, 
-									net=None, cost=None, update = None))
+									net=None, update = None))
 		self.__dict__['lockedParameters'] = set()
 		self.__dict__['requiredInputs'] = []
-		self.__dict__['trainingInputs'] = []
 		self.__dict__['excludeFromPickle'] = ['modelParameters']
 		return self
 
 	def __init__(self,name=None,**args):
 		self.name = name if name is not None else self.__class__.__name__
 		self.hyperParameters.update(**args)
-		self.createModel()
+		self.create()
 		super().__init__()
 
 	@property
@@ -40,8 +39,12 @@ class Net(DeepRoot.DeepRoot):
 	@property
 	def trainableParameters(self):
 		raise NotImplementedError
-
-	def createModel(self):
+		
+	@property
+	def model(self):
+		return self.net
+		
+	def create(self):
 		"""Override this method to customize your model"""
 		raise NotImplementedError
 
@@ -50,32 +53,6 @@ class Net(DeepRoot.DeepRoot):
 
 	def getOutput(self,deterministic=False,**args):
 		return self.output
-
-	def forwardPass(self,examples,**args):
-		if not isinstance(examples,dict):
-			examples = self.preprocessInput(dict(input=examples))
-		else:
-			examples = self.preprocessInput(examples)
-		feed = {self.x:examples['input']}; feed.update(**args)
-		return self.y.eval(feed)
-
-
-	def evaluateCost(self,examples,**args):
-		examples = self.preprocessInput(examples)
-		feed = {self.x:examples['input'],self.yp:examples['truth']}; feed.update(**args)
-		return self.cost.eval(feed)
-
-
-	def getLayers(self):
-		return lasagne.layers.get_all_layers(self.net)
-
-	def lockLayers(self,layers):
-		for layer in layers:
-			[self.lockedParameters.add(param[0]) for param in layer.params.items() if 'trainable' in param[1]]
-
-	def unlockLayers(self,layers):
-		for layer in layers:
-			[self.lockedParameters.remove(param[0]) for param in layer.params.items() if 'trainable' in param[1]]
 
 
 	# Pickling support
@@ -117,7 +94,7 @@ class Net(DeepRoot.DeepRoot):
 		with open(os.path.join(fname,netName),'rb') as f:
 			obj = dill.load(f)
 		obj.__dict__['fname'] = fname
-		obj.createModel()
+		obj.create()
 		variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=obj.name)
 		obj.modelParameters['tfSaver'] = tf.train.Saver(var_list=variables)
 		obj.loadCheckpoint()

@@ -1,10 +1,10 @@
 import time,os,copy,sys
 import math,numpy, random
-import os.path as pth
+from collections import OrderedDict
 import dill
 import tensorflow as tf
 from . import Net
-from collections import OrderedDict
+from .. import Data
 from ..utility import *
 
 import logging
@@ -113,7 +113,7 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 
 class UNet2D(Net):
 
-	def __init__(self,dimensions=(None,None,1),filterPlan=[10,20,30,40,50],filterSize=(5,5),layerThickness=1,postUDepth=2,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,name=None,skipChannels=1.0,**args):
+	def __init__(self,dimensions=(None,None,1),filterPlan=[10,20,30,40,50],filterSize=(5,5),layerThickness=1,postUDepth=2,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=None,name=None,skipChannels=1.0,**args):
 		self.hyperParameters.update(dict(dropoutProbability=None,
 										dimensions=[None] + list(dimensions),
 										filterPlan = filterPlan,
@@ -130,10 +130,19 @@ class UNet2D(Net):
 										skipChannels = skipChannels,
 										**args,
 										))
+
+		self.hyperParameters['standardize'] = Data.SpotStandardization() if standardize == True else standardize
+		self.hyperParameters['preprocessor'] = \
+							Data.ImagePreprocessor(	requiredDimensionOrder = ['b','y','x','c'],
+												crop = args.get('crop',None),
+												standardize = self.standardize,
+												pad = len(self.filterPlan),
+												mode = '2d',
+												)
 		super().__init__()
 
 
-	def createModel(self):
+	def create(self):
 		"""Override this method to customize your model"""
 		init = tf.contrib.layers.xavier_initializer()
 		
@@ -184,42 +193,15 @@ class UNet2D(Net):
 				self.requiredInputs += [self.internalDropoutProbability]
 			if self.inputNoiseSigma is not None:
 				self.requiredInputs.append(self.inputNoiseSigma)
-			self.trainingInputs = [self.yp]
 			self.net = net
 			self.y = self.output = self.net
 
 
-	@property
-	def model(self):
-		return self.net
-
-	def preprocessInput(self,example):
-		ret = dict(); ret.update(example)
-		if example['input'].ndim == 4:     # this is single channel data
-			x = numpy.expand_dims(example['input'],1)
-		else:
-			x = example['input']
-
-		x = numpy.transpose(x,[0,2,1,3,4])		# move z axis to second position (batch,z,channel,y,x)
-		x = numpy.vstack(x)							# stack z slices into batch dimension
-		x = x.astype(numpy.float32);
-		ret['input'] = x
-
-		y = example['truth'] if example.get('truth',None) is not None else None
-		if y is not None:
-			y = numpy.transpose(y,[0,2,1,3,4])		# move z axis to second position (batch,z,channel,y,x)
-			y = numpy.vstack(y)							# stack z slices into batch dimension
-			y = y.astype(numpy.float32)
-			ret['truth'] = y
-
-		attention = example.get('attention',None)
-		if attention is not None:
-			attention = numpy.expand_dims(attention,1)
-			attention = numpy.transpose(attention,[0,2,1,3,4])
-			attention = numpy.vstack(attention)
-			attention = attention.astype(numpy.float32)
-			ret['attention'] = attention
-
+	def preprocessInput(self,example,dimensionOrder=None):
+		dimensionOrder = example.get(dimensionOrder,None) if dimensionOrder is None else dimensionOrder
+		ret = dict(); ret.update(example); 
+		ret['input'] = self.preprocessor.process(example['input'],dimensionOrder=dimensionOrder)
+		ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder)
 		return ret
 
 
@@ -249,7 +231,7 @@ class UNet3D(Net):
 		super().__init__()
 
 
-	def createModel(self):
+	def create(self):
 		"""Override this method to customize your model"""
 		init = tf.contrib.layers.xavier_initializer()
 
@@ -300,14 +282,9 @@ class UNet3D(Net):
 				self.requiredInputs += [self.internalDropoutProbability]
 			if self.inputNoiseSigma is not None:
 				self.requiredInputs.append(self.inputNoiseSigma)
-			self.trainingInputs = [self.yp]
 			self.net = net
 			self.y = self.output = self.net
 
-
-	@property
-	def model(self):
-		return self.net
 
 	def preprocessInput(self,example):
 		ret = dict(); ret.update(example)
@@ -316,7 +293,6 @@ class UNet3D(Net):
 		else:
 			x = example['input']
 
-		import pudb; pu.db
 		x = numpy.transpose(x,[0,2,1,3,4])		# move z axis to second position (batch,z,channel,y,x)
 		x = numpy.vstack(x)							# stack z slices into batch dimension
 		x = x.astype(numpy.float32);
@@ -342,100 +318,5 @@ class UNet3D(Net):
 
 
 
-
-
-
-# 
-# class UNet3D(UNet2D):
-# 
-# 	def __init__(self,dimensions=(1,None,None,None),filterPlan=[15,20,30,40,50],filterSize=(5,5,5),layerThickness=None,postUDepth=2,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,name=None):
-# 		super().__init__(dimensions,filterPlan,filterSize,layerThickness=layerThickness,postUDepth=postUDepth,maxpool=maxpool,normalization=normalization,nonlinearity=nonlinearity,inputDropout=inputDropout,inputNoise=inputNoise,internalDropout=internalDropout,gentleCoding=gentleCoding,name=name)
-# 
-# 
-# 	def createModel(self,dimensions=(None,1,None,None,None),filterPlan=[10,20,30,40,50],filterSize=(5,5,5),layerThickness=None,postUDepth=2,maxpool=False,dropout=False,inputDropout=False,inputNoise=False,internalDropout=False,**extras):
-# 		self.x = T.tensor5(name='input')
-# 		self.yp = T.tensor5(name='truth')
-# 		self.attentionWeight = T.tensor5(name='attention')
-# 		if self.inputDropout:
-# 			self.inputDropoutProbability = T.scalar('inputDropout')
-# 		else:
-# 			self.inputDropoutProbability = None;
-# 		if self.internalDropout:
-# 			self.internalDropoutProbability = T.scalar('internalDropout')
-# 		else:
-# 			 self.internalDropoutProbability = None
-# 		if self.inputNoise:
-# 			self.inputNoiseSigma = T.scalar('inputNoiseSigma',dtype=theano.config.floatX)
-# 		else:
-# 			self.inputNoiseSigma = None
-# 		inLayer = net = lasagne.layers.InputLayer(shape=dimensions, input_var=self.x)
-# 		if self.inputDropout:
-# 			net = lasagne.layers.DropoutLayer(net,p=self.inputDropoutProbability,rescale=True)
-# 		if self.inputNoise:
-# 			net = lasagne.layers.GaussianNoiseLayer(net,sigma=self.inputNoiseSigma)
-# 
-# 		net = uNet3D(net,filterPlan = filterPlan,filterSize = filterSize,maxpool=maxpool,layerThickness=layerThickness,normalization=self.normalization,nonlinearity=self.nonlinearity)
-# 
-# 		for i in range(postUDepth):
-# 			net = lasagne.layers.Conv3DLayer(net, filters=filterPlan[0], filter_size = filterSize, pad='same',nonlinearity=self.nonlinearity,kernel_initializer = init)
-# 			net.name = 'postU%d' % i
-# 			if self.normalization is not None:
-# 				net = self.normalization(net)
-# 				net.name = 'Normalization'
-# 			if self.internalDropout:
-# 				net = lasagne.layers.DropoutLayer(net,p=self.internalDropoutProbability,rescale=True)
-# 		self.requiredInputs = [self.x]
-# 		if self.inputDropout:
-# 			self.requiredInputs += [self.inputDropoutProbability]
-# 		if self.internalDropout:
-# 			self.requiredInputs += [self.internalDropoutProbability]
-# 		if self.inputNoise:
-# 			self.requiredInputs.append(self.inputNoiseSigma)
-# 		self.trainingInputs = [self.yp]
-# 		self.net = net
-# 		self.output = lasagne.layers.get_output(self.net)
-# 		self.forwardFunction = theano.function(inputs=self.requiredInputs,outputs=self.output)
-# 
-# 
-# 	def makeCost(self,withAttention=False,**args):
-# 		#if self.costFragment is None:			# Need to fix this to detect changes in arguments.  Maybe dictionary of cost fragments?
-# 		permuterX = PermuteLayer3D(self.net)
-# 		permutedX = lasagne.layers.get_output(permuterX)
-# 		permuterY = PermuteLayer3D(lasagne.layers.InputLayer(shape=self.dimensions,input_var=self.yp))
-# 		permutedY = lasagne.layers.get_output(permuterY)
-# 		safeOut = theano.tensor.clip(permutedX, 0.00001, 0.99999)
-# 
-# 		if not withAttention:
-# 			self.costFragment = ((self.y-self.x)**2).mean()
-# 			self.costFunction = theano.function(self.requiredInputs + self.trainingInputs,outputs=self.costFragment)
-# 		else:
-# 			permuterAttention = PermuteLayer3D(lasagne.layers.InputLayer(shape=self.dimensions,input_var=self.attentionWeight))
-# 			permutedAttention = lasagne.layers.get_output(permuterAttention)
-# 			self.costFragment = ((self.y-self.x)**2*T.transpose(permutedAttention)).mean()
-# 			self.costFunction = theano.function(self.requiredInputs + self.trainingInputs + [self.attentionWeight],outputs=self.costFragment)
-# 		return self.costFragment
-# 
-# 
-# 	def preprocessInput(self,example):
-# 		ret = OrderedDict(); ret.update(example)
-# 		if example['input'].ndim == 4:     # this is single channel data
-# 			x = numpy.expand_dims(example['input'],1)
-# 		else:
-# 			x = example['input']
-# 
-# 		x = x.astype(numpy.float32);
-# 		ret['input']=x
-# 
-# 		y = example['truth'] if example.get('truth',None) is not None else None
-# 		if y is not None:
-# 			y = y.astype(numpy.float32)
-# 			ret['truth'] = y
-# 
-# 		attention = example.get('attention',None)
-# 		if attention is not None:
-# 			attention = numpy.expand_dims(attention,1)
-# 			attention = attention.astype(numpy.float32)
-# 			ret['attention'] = attention
-# 		return ret
 
 
