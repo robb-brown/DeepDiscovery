@@ -1,9 +1,11 @@
+import matplotlib;
+#matplotlib.use('Agg')
+matplotlib.interactive(True)
+
 import DeepDiscovery as dd
 import glob, os
 import tensorflow as tf
 import numpy
-
-import matplotlib; matplotlib.interactive(True)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -44,8 +46,6 @@ trainingData.save('corpusCallosum.data')
 # multiple of 2**depth where depth is the number of downsampling steps.  For now, this
 # is done by the data object.  This will be moved to the network preprocessing though.
 # If we're in 2d mode we only need to pad x and y.
-trainingData.mode = '2d'
-trainingData.depth = 3
 attention = dd.Data.EdgeBiasedAttention(); trainingData.attention = attention
 
 # You can test out your trainingData object by asking for an example:

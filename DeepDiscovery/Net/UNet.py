@@ -211,7 +211,7 @@ class UNet2D(Net):
 
 class UNet3D(Net):
 
-	def __init__(self,dimensions=(None,None,None,1),filterPlan=[10,20,30,40,50],filterSize=5,layerThickness=1,postUDepth=2,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,name=None,skipChannels=1.0,**args):
+	def __init__(self,dimensions=(None,None,None,1),filterPlan=[10,20,30,40,50],filterSize=5,layerThickness=1,postUDepth=2,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=None,name=None,skipChannels=1.0,**args):
 		self.hyperParameters.update(dict(dropoutProbability=None,
 										dimensions=[None] + list(dimensions),
 										filterPlan = filterPlan,
@@ -228,6 +228,14 @@ class UNet3D(Net):
 										skipChannels = skipChannels,
 										**args,
 										))
+		self.hyperParameters['standardize'] = Data.SpotStandardization() if standardize == True else standardize
+		self.hyperParameters['preprocessor'] = \
+							Data.ImagePreprocessor(	requiredDimensionOrder = ['b','z','y','x','c'],
+												crop = args.get('crop',None),
+												standardize = self.standardize,
+												pad = len(self.filterPlan),
+												mode = '3d',
+												)
 		super().__init__()
 
 
@@ -286,33 +294,11 @@ class UNet3D(Net):
 			self.y = self.output = self.net
 
 
-	def preprocessInput(self,example):
-		ret = dict(); ret.update(example)
-		if example['input'].ndim == 4:     # this is single channel data
-			x = numpy.expand_dims(example['input'],1)
-		else:
-			x = example['input']
-
-		x = numpy.transpose(x,[0,2,1,3,4])		# move z axis to second position (batch,z,channel,y,x)
-		x = numpy.vstack(x)							# stack z slices into batch dimension
-		x = x.astype(numpy.float32);
-		ret['input'] = x
-
-		y = example['truth'] if example.get('truth',None) is not None else None
-		if y is not None:
-			y = numpy.transpose(y,[0,2,1,3,4])		# move z axis to second position (batch,z,channel,y,x)
-			y = numpy.vstack(y)							# stack z slices into batch dimension
-			y = y.astype(numpy.float32)
-			ret['truth'] = y
-
-		attention = example.get('attention',None)
-		if attention is not None:
-			attention = numpy.expand_dims(attention,1)
-			attention = numpy.transpose(attention,[0,2,1,3,4])
-			attention = numpy.vstack(attention)
-			attention = attention.astype(numpy.float32)
-			ret['attention'] = attention
-
+	def preprocessInput(self,example,dimensionOrder=None):
+		dimensionOrder = example.get(dimensionOrder,None) if dimensionOrder is None else dimensionOrder
+		ret = dict(); ret.update(example); 
+		ret['input'] = self.preprocessor.process(example['input'],dimensionOrder=dimensionOrder)
+		ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder)
 		return ret
 
 
