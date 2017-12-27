@@ -119,6 +119,7 @@ class ImageTrainingData(TrainingData):
 
 	def preprocessExamples(self,examples):
 		basepath = self.__dict__.get('basepath',os.path.dirname(self.__dict__.get('fname','')))
+		basepath = os.path.dirname(self.__dict__.get('fname','')) if basepath is None else basepath
 		xs = []; ys = []; attentions = []
 		for example in examples:
 			t1 = time.time()
