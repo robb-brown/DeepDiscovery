@@ -70,8 +70,7 @@ class ProgressTracker(DeepRoot.DeepRoot):
 	def plotMetrics(self,example,output,display=True,**args):
 		if self.figures is None:
 			self.figures = dict()
-		if not os.path.exists(self.basePath):
-			os.makedirs(self.basePath,mode=0o777)
+		os.makedirs(os.path.join(self.basePath,self.name),mode=0o777,exist_ok=True)
 		if not output is None:
 			self.plotOutput(example,output,display=display,**args)
 		metrics = args.get('metrics',{})
@@ -117,8 +116,8 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		axis.legend(loc='best')
 
 		try:
-			self.figures[metric].savefig(os.path.join(self.basePath,'{}.{}'.format(metric,self.fileType)),transparent=False,bbox_inches='tight')
-			self.figures[metric+'Detail'].savefig(os.path.join(self.basePath,'{}Detail.{}'.format(metric,self.fileType)),transparent=False,bbox_inches='tight')
+			self.figures[metric].savefig(os.path.join(self.basePath,self.name,'{}.{}'.format(metric,self.fileType)),transparent=False,bbox_inches='tight')
+			self.figures[metric+'Detail'].savefig(os.path.join(self.basePath,self.name,'{}Detail.{}'.format(metric,self.fileType)),transparent=False,bbox_inches='tight')
 		except:
 			logger.exception('Error saving figures')
 
@@ -172,7 +171,7 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		axis.contour(truth[:,:,midSlice],colors=['b'],alpha=0.1,linewidths=1,origin='lower')
 
 		try:
-			self.figures['output'].savefig(os.path.join(self.basePath,'output.%s'%self.fileType),transparent=True,bbox_inches='tight')
+			self.figures['output'].savefig(os.path.join(self.basePath,self.name,'output.%s'%self.fileType),transparent=True,bbox_inches='tight')
 		except:
 			logger.exception('Error saving figures')
 
