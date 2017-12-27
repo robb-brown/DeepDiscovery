@@ -10,6 +10,7 @@ class CostFunction(DeepRoot.DeepRoot):
 	def __new__(cls,*args,**kwargs):
 		self = super().__new__(cls)
 		self.__dict__['modelParameters'].update(dict(requiredInputs=[]))
+		self.__dict__['hyperParameters']['net'] = None
 		return self
 	
 	def create(self):
@@ -17,22 +18,25 @@ class CostFunction(DeepRoot.DeepRoot):
 
 
 class CrossEntropyCost(CostFunction):
+
+	def __new__(cls,*args,**kwargs):
+		self = super().__new__(cls)
+		self.__dict__['modelParameters'].update(dict(y = None, yp = None))
+		self.__dict__['attention'] = None
+		return self
 	
-	def __init__(self,y,yp,attention=False):
-		self.modelParameters.update(dict(
-			y = y,
-			yp = yp
-		))
-		self.__dict__['attention'] = attention
+	def __init__(self,net,attention=False):
+		self.net = net
+		self.attention = attention
 	
 	def create(self):
-		cost = tf.keras.losses.categorical_crossentropy(self.yp,self.y)
+		cost = tf.keras.losses.categorical_crossentropy(self.net.yp,self.net.y)
 		if self.attention:
-			self.modelParameters['attentionOp'] = tf.placeholder('float',shape=self.yp.get_shape(),name='attention')
+			self.modelParameters['attentionOp'] = tf.placeholder('float',shape=self.net.yp.get_shape(),name='attention')
 			cost *= self.attentionOp[...,0]
 			self.requiredInputs.append(self.attentionOp)
 		cost = tf.reduce_mean(cost)
-		self.requiredInputs += [self.yp]
+		self.requiredInputs += [self.net.yp]
 		return cost
 
 
@@ -201,7 +205,7 @@ class Trainer(DeepRoot.DeepRoot):
 	def saveCheckpoint(self,label=None,write_meta_graph=False):
 		trainerName = self.name + '.trainer'
 		name = self.name + ('-{}'.format(label) if not label is None else '')
-		self.tfSaver.save(tf.get_default_session(),os.path.join(self.fname,trainerName,name),write_meta_graph=write_meta_graph)
+		self.tfSaver.save(tf.get_default_session(),os.path.join(self.fname,name),write_meta_graph=write_meta_graph)
 		self.net.saveCheckpoint(label=label,write_meta_graph=write_meta_graph)
 
 	def loadCheckpoint(self,label=None,latest=True):
@@ -221,47 +225,45 @@ class Trainer(DeepRoot.DeepRoot):
 			saves it's net into that directory. The trainer is saved into
 			a .trainer subdirectory.
 			The return value is the path to the DD directory."""
-		# create the net directory
 		netName = self.net.name + '.net'
 		trainerName = self.name + '.trainer'
-		defaultFname = self.__dict__.get('fname',netName)
-		fname = defaultFname if fname is None else os.path.join(fname,netName) if fname.endswith(os.path.sep) else fname
-		self.__dict__['fname'] = fname
+		path = fname if fname is not None else self.fname if self.fname is not None else self.net.fname
+		self.__dict__['fname'] = os.path.join(path,trainerName)
 		self.__dict__['saveTime'] = time.time()
 
-		os.makedirs(os.path.join(fname,trainerName),mode=0o777,exist_ok=True)
+		os.makedirs(os.path.join(path,trainerName),mode=0o777,exist_ok=True)
 		
 		# save the net and tracker and replace their references in the trainer with file names
 		self.netClass = self.net.__class__
 		self.trackerClass = self.progressTracker.__class__
-		self.netFile = self.net.save(fname)
-		self.trackerFile = self.progressTracker.save(fname)
+		self.netFile = os.path.basename(self.net.save(path))
+		self.trackerFile = os.path.basename(self.progressTracker.save(path))
 		
-		with open(os.path.join(fname,trainerName,trainerName),'wb') as f:
+		with open(os.path.join(path,trainerName,trainerName),'wb') as f:
 			dill.dump(self,f,protocol=dill.HIGHEST_PROTOCOL)
 
 		variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
 		self.modelParameters['tfSaver'] = tf.train.Saver(var_list=variables)
 		self.saveCheckpoint(write_meta_graph=True)
 		
-		return os.path.join(fname,trainerName,trainerName)
+		return os.path.join(path,trainerName,trainerName)
 
 
 	# Load not updated yet
 
 	@classmethod
-	def load(self,fname):
+	def load(self,fname=None):
 		""""fname is the full path to a trainer dir.  The trainer will load it's
 		accompanying net file, which should be in the same directory."""
-		fname = fname[:-1] if fname.endswith(os.path.sep) else fname
 		trainerName = os.path.basename(fname)
-		fname = os.path.dirname(fname)
-		with open(os.path.join(fname,trainerName,trainerName),'rb') as f:
+		path = os.path.dirname(fname)
+		with open(os.path.join(path,trainerName,trainerName),'rb') as f:
 			trainer = dill.load(f)
-		trainer.__dict__['fname'] = fname
+		trainer.__dict__['fname'] = os.path.join(path)
 		try:
-			trainer.net = trainer.netClass.load(os.path.join(fname))
-			trainer.progressTracker = trainer.trackerClass.load(os.path.join(fname,os.path.basename(trainer.trackerFile)))
+			trainer.net = trainer.netClass.load(path)
+			trainer.progressTracker = trainer.trackerClass.load(os.path.join(path,trainer.trackerFile))
+			trainer.cost.net = trainer.net
 			trainer.initializeTraining()
 			trainer.setupMetrics()
 			variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=trainer.name)
@@ -269,6 +271,6 @@ class Trainer(DeepRoot.DeepRoot):
 			trainer.loadCheckpoint()
 		except:
 			logger.exception('Failed to load net')
-			logger.warning('*** Could not locate saved network. Trainer will be nonfunctional. ***')
+			logger.warning('*** Could not locate saved network at {}. Trainer will be nonfunctional. ***'.format(fname))
 		return trainer
 

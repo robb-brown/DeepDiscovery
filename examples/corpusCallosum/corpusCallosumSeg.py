@@ -74,7 +74,7 @@ if 1:
 	# the performance of the network as it is trained, creates graphs, and dumps these to files
 	# on disk so we can look at them or serve them with a webserver.
 	tracker = dd.Trainer.ProgressTracker(logPlots=False,plotEvery=50,basePath='./tracker')
-	cost = dd.Trainer.CrossEntropyCost(y=segmenter.y,yp=segmenter.yp,attention=False)
+	cost = dd.Trainer.CrossEntropyCost(net=segmenter,attention=False)
 	metrics = ['output','cost','jaccard']; learning_rate = 1e-3
 	trainer = dd.Trainer.Trainer(net=segmenter,cost=cost,examples=trainingData,progressTracker=tracker,metrics=metrics,learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1e-08)
 	# ---------------------------------------------------------------------
@@ -83,11 +83,12 @@ if 1:
 	session.run(tf.global_variables_initializer())
 	
 	# Save the trainer (and all it's components) before we use them
+	segmenter.save()
 	trainer.save()
 
 else:
 	# -------------- Load the trainer, tracker and network -----------------
-	trainer = dd.Trainer.Trainer.load('Segmenter2D.net/Training-Segmenter2D.trainer')
+	trainer = dd.Trainer.Trainer.load('CorpusCallosum2D.net/Training-CorpusCallosum2D.trainer')
 	segmenter = trainer.net
 	# ---------------------------------------------------------------------
 
