@@ -19,7 +19,7 @@ class Net(DeepRoot.DeepRoot):
 	def __new__(cls,*args,**kwargs):
 		self = super().__new__(cls)
 		self.__dict__['modelParameters'].update(dict(output = None, y = None, 
-									yp = None, x = None, 
+									yp = None, x = None, layers = [],
 									net=None, update = None))
 		self.__dict__['lockedParameters'] = set()
 		self.__dict__['requiredInputs'] = []
@@ -43,6 +43,10 @@ class Net(DeepRoot.DeepRoot):
 	@property
 	def model(self):
 		return self.net
+		
+	def addLayer(self,layer):
+		self.layers.append(layer)
+		return layer
 		
 	def create(self):
 		"""Override this method to customize your model"""

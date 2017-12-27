@@ -42,10 +42,12 @@ trainingData = dd.Data.ImageTrainingData(examples,reserveForValidation=0.1,reser
 # different networks.
 trainingData.save('corpusCallosum.data')
 
-# Our network downsamples a certain number of times, and the input image needs to be a
-# multiple of 2**depth where depth is the number of downsampling steps.  For now, this
-# is done by the data object.  This will be moved to the network preprocessing though.
-# If we're in 2d mode we only need to pad x and y.
+# We can use a spatially weighted cost function (called 'attention', but not to be confused with
+# other forms of attention in deep learning).  This can help with tasks that involve segmentation
+# of a small structure with lots of background, or where edges are very important and seem to be
+# getting overlooked.  Our data object is in charge of generating the spatial weighting functions,
+# and we pass it an object for this purpose.  In this case, we'll use one that emphasizes edges and
+# puts more weight on the corpus callosum to make up for it's small size.
 attention = dd.Data.EdgeBiasedAttention(); trainingData.attention = attention
 
 # You can test out your trainingData object by asking for an example:
@@ -63,8 +65,8 @@ if 1:
 	# the U net. We give our network a name so that it is distinct from others we might load or create
 	# (it puts its tensorflow variables into a variable scope based on the name) and will also
 	# default to saving itself under that name.
-	filterPlan = [10,20,30]; filterSize = 5; postUDepth = 1; standardize=True
-	segmenter = dd.Net.Segmenter2D(filterPlan=filterPlan,filterSize=filterSize,postUDepth=postUDepth,standardize=standardize,name='CorpusCallosum2D')
+	filterPlan = [10,20,30]; filterSize = 5; postUDepth = 1; standardize=True; inputDropout = True
+	segmenter = dd.Net.Segmenter2D(filterPlan=filterPlan,filterSize=filterSize,postUDepth=postUDepth,standardize=standardize,inputDropout=inputDropout,name='CorpusCallosum2D')
 	# ---------------------------------------------------------------------
 
 	# -----------------------  Creating a Trainer and Tracker------------------------
@@ -72,7 +74,7 @@ if 1:
 	# the performance of the network as it is trained, creates graphs, and dumps these to files
 	# on disk so we can look at them or serve them with a webserver.
 	tracker = dd.Trainer.ProgressTracker(logPlots=False,plotEvery=50,basePath='./tracker')
-	cost = dd.Trainer.CrossEntropyCost(y=segmenter.y,yp=segmenter.yp,attention=True)
+	cost = dd.Trainer.CrossEntropyCost(y=segmenter.y,yp=segmenter.yp,attention=False)
 	metrics = ['output','cost','jaccard']; learning_rate = 1e-3
 	trainer = dd.Trainer.Trainer(net=segmenter,cost=cost,examples=trainingData,progressTracker=tracker,metrics=metrics,learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1e-08)
 	# ---------------------------------------------------------------------
@@ -89,11 +91,11 @@ else:
 	segmenter = trainer.net
 	# ---------------------------------------------------------------------
 
-
 print('\n\n\n')
 
 # ------------------------- Train -----------------------------------
-trainer.train(trainTime=0.1,examplesPerEpoch=5,trainingExamplesPerBatch=1)
+trainArgs=dict(inputDropout=0.5); validateArgs = dict(inputDropout=0.0)
+trainer.train(trainTime=0.1,examplesPerEpoch=5,trainingExamplesPerBatch=1,trainArgs=trainArgs,validateArgs=validateArgs)
 # ---------------------------------------------------------------------
 
 # ------------------------- Save the trainer, tracker and network -----------------------------------

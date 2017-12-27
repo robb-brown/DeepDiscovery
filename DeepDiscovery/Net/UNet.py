@@ -153,7 +153,7 @@ class UNet2D(Net):
 			self.hyperParameters['attentionWeight'] = tf.placeholder('float',shape=[None,None,None,None],name='attention')
 
 			if self.inputDropout:
-				self.hyperParameters['inputDropoutProbability'] = tf.placeholder('float','inputDropout')
+				self.hyperParameters['inputDropoutProbability'] = tf.placeholder_with_default(0.99,shape=(),name='inputDropout')
 			else:
 				self.hyperParameters['inputDropoutProbability'] = None
 			if self.internalDropout:
@@ -167,7 +167,7 @@ class UNet2D(Net):
 
 			net = inLayer = self.x
 			if self.inputDropout:
-				net = tf.layers.dropout(net,rate=self.inputDropoutProbability,name='InputDropout',data_format='channels_last')
+				net = self.addLayer(tf.layers.Dropout(rate=self.inputDropoutProbability,name='InputDropout')).apply(net,training=True)
 			if self.inputNoise:
 				net = net + tf.random_normal(shape=tf.shape(net), mean=0.0, stddev=self.inputNoiseSigma, dtype='float')
 
@@ -250,7 +250,7 @@ class UNet3D(Net):
 			self.hyperParameters['attentionWeight'] = tf.placeholder('float',shape=[None,None,None,None,None],name='attention')
 
 			if self.inputDropout:
-				self.hyperParameters['inputDropoutProbability'] = tf.placeholder('float','inputDropout')
+				self.hyperParameters['inputDropoutProbability'] = tf.placeholder_with_default(0.99,shape=(),name='inputDropout')
 			else:
 				self.hyperParameters['inputDropoutProbability'] = None
 			if self.internalDropout:
@@ -264,7 +264,7 @@ class UNet3D(Net):
 
 			net = inLayer = self.x
 			if self.inputDropout:
-				net = tf.layers.dropout(net,rate=self.inputDropoutProbability,name='InputDropout',data_format='channels_last')
+				net = self.addLayer(tf.layers.Dropout(rate=self.inputDropoutProbability,name='InputDropout')).apply(net,training=True)
 			if self.inputNoise:
 				net = net + tf.random_normal(shape=tf.shape(net), mean=0.0, stddev=self.inputNoiseSigma, dtype='float')
 

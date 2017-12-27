@@ -69,7 +69,14 @@ def depadImage(img,originalShape,spatialAxes=[0,1,2]):
 	
 def buildFeed(requiredInputs,example,**args):
 	args.update(example)
-	return dict([(requiredInput,args.get(requiredInput.name.split(':')[0].split('_')[0].split('/')[-1],None)) for requiredInput in requiredInputs])
+	ret = dict(); missing = []
+	for requiredInput in requiredInputs:
+		name = requiredInput.name.split(':')[0].split('_')[0].split('/')[-1]
+		if name in args:
+			ret[requiredInput] = args[name]
+		else:
+			missing.append(name)
+	return ret,missing
 
 
 def reportLayerSize(outputShape,annotation=''):

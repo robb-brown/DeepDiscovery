@@ -63,8 +63,8 @@ if 1:
 	# the U net. We give our network a name so that it is distinct from others we might load or create
 	# (it puts its tensorflow variables into a variable scope based on the name) and will also
 	# default to saving itself under that name.
-	filterPlan = [10]; filterSize = 5; postUDepth = 1; standardize=True
-	segmenter = dd.Net.Segmenter3D(filterPlan=filterPlan,filterSize=filterSize,postUDepth=postUDepth,standardize=standardize,name='CorpusCallosum3D')
+	filterPlan = [10]; filterSize = 5; postUDepth = 1; standardize=True; inputDropout = True
+	segmenter = dd.Net.Segmenter2D(filterPlan=filterPlan,filterSize=filterSize,postUDepth=postUDepth,standardize=standardize,inputDropout=inputDropout,name='CorpusCallosum3D')
 	# ---------------------------------------------------------------------
 
 	# -----------------------  Creating a Trainer and Tracker------------------------
@@ -93,7 +93,8 @@ else:
 print('\n\n\n')
 
 # ------------------------- Train -----------------------------------
-trainer.train(trainTime=0.1,examplesPerEpoch=5,trainingExamplesPerBatch=1)
+trainArgs=dict(inputDropout=0.5); validateArgs = dict(inputDropout=0.0)
+trainer.train(trainTime=0.1,examplesPerEpoch=5,trainingExamplesPerBatch=1,trainArgs=trainArgs,validateArgs=validateArgs)
 # ---------------------------------------------------------------------
 
 # ------------------------- Save the trainer, tracker and network -----------------------------------

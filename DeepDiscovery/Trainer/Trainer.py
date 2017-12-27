@@ -110,32 +110,36 @@ class Trainer(DeepRoot.DeepRoot):
 		
 
 
-	def trainOne(self,examples=None,N=1):
+	def trainOne(self,examples=None,N=1,**args):
 		if examples is None:
 			examples = self.examples.getTrainingExamples(N)
 		examples = self.net.preprocessInput(examples)
-
-		feed = utility.buildFeed(self.net.requiredInputs+self.cost.requiredInputs,examples)
+		feed,missing = utility.buildFeed(self.net.requiredInputs+self.cost.requiredInputs,examples,**args)
+		if len(missing) > 0:
+			logger.error('Missing training values: {}'.format(missing))
 		_,ret = tf.get_default_session().run([self.trainingStep,self.metrics],feed_dict=feed)
 		return ret
 
 
-	def validate(self,examples=None,N=1):
+	def validate(self,examples=None,N=1,**args):
 		if examples is None:
 			examples = self.examples.getValidationExamples(N)
 		examples = self.net.preprocessInput(examples)
-
-		feed = utility.buildFeed(self.net.requiredInputs+self.cost.requiredInputs,examples)
+		feed,missing = utility.buildFeed(self.net.requiredInputs+self.cost.requiredInputs,examples,**args)
+		if len(missing) > 0:
+			logger.error('Missing training values: {}'.format(missing))
 		ret = tf.get_default_session().run(self.metrics,feed_dict=feed)
 		return ret
 
 
-	def train(self,epochs=1,trainTime=None,examplesPerEpoch=5,trainingExamplesPerBatch=1,validationExamplesPerBatch=1,saveEvery=False,debug=False,**args):
+	def train(self,epochs=1,trainTime=None,examplesPerEpoch=5,trainingExamplesPerBatch=1,validationExamplesPerBatch=1,saveEvery=False,debug=False,trainArgs=dict(),validateArgs=dict()):
 		if trainTime is not None:
 			logger.info("Training for {:0.2f} hours using {} examples per epoch.".format(trainTime,examplesPerEpoch))
 		else:
 			logger.info("Training for {} epochs using {} examples per epoch.".format(epochs,examplesPerEpoch))
 
+		if validateArgs is None or len(validateArgs) == 0:
+			validateArgs = trainArgs
 		self.previouslyElapsed += self.elapsed; self.elapsed = 0
 		trainTime *= 3600;
 		self.startTime = time.time()
@@ -146,9 +150,7 @@ class Trainer(DeepRoot.DeepRoot):
 			# -------------------  Inner training loop --------------------
 			for iteration in range(0,examplesPerEpoch):
 				example = self.examples.getTrainingExamples(trainingExamplesPerBatch)
-				example.update(args)
-
-				result = self.trainOne(example)
+				result = self.trainOne(example,**trainArgs)
 
 				t2 = time.time(); self.elapsed = t2-self.startTime;
 				if self.progressTracker is not None:
@@ -158,8 +160,7 @@ class Trainer(DeepRoot.DeepRoot):
 
 			# -------------------  Validation --------------------
 			example = self.examples.getValidationExamples(validationExamplesPerBatch)
-			example.update(args)
-			result = self.validate(example)
+			result = self.validate(example,**validateArgs)
 			
 			if self.progressTracker is not None:
 				self.progressTracker.update(example=example,epoch=self.epoch,iteration=iteration,elapsed=self.previouslyElapsed+self.elapsed,totalIterations=self.epoch*examplesPerEpoch+iteration,kind='Validation',metrics=result)
@@ -182,8 +183,7 @@ class Trainer(DeepRoot.DeepRoot):
 				lastSave = self.elapsed
 
 		example = self.examples.getValidationExamples(validationExamplesPerBatch)
-		example.update(args)
-		result = self.validate(example)
+		result = self.validate(example,**validateArgs)
 		if self.progressTracker is not None:
 			self.progressTracker.update(example=example,epoch=self.epoch,iteration=iteration,elapsed=self.previouslyElapsed+self.elapsed,totalIterations=self.epoch*examplesPerEpoch+iteration,kind='Validation',metrics=result)
 
