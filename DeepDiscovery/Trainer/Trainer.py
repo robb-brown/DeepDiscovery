@@ -1,5 +1,5 @@
 import tensorflow as tf
-import time, datetime, os, dill, numpy, sys
+import time, datetime, os, dill, numpy, sys, glob
 from collections import OrderedDict
 from .. import DeepRoot, Net, utility
 import logging
@@ -68,12 +68,12 @@ class Trainer(DeepRoot.DeepRoot):
 			epoch = 0,
 			startTime = None,
 			params = None,
-			netFile = None,
-			trackerFile = None,
 			cost = cost,
 			metricNames = metrics,
 			netClass = net.__class__,
 			trackerClass = progressTracker.__class__,
+			netFile = None,
+			trackerFile = None,
 		))
 		self.name = name if not name is None else 'Training-' + self.net.name
 		self.initializeTraining()
@@ -227,7 +227,7 @@ class Trainer(DeepRoot.DeepRoot):
 			The return value is the path to the DD directory."""
 		netName = self.net.name + '.net'
 		trainerName = self.name + '.trainer'
-		path = fname if fname is not None else self.fname if self.fname is not None else self.net.fname
+		path = fname if fname is not None else self.net.fname
 		self.__dict__['fname'] = os.path.join(path,trainerName)
 		self.__dict__['saveTime'] = time.time()
 
@@ -257,6 +257,15 @@ class Trainer(DeepRoot.DeepRoot):
 		accompanying net file, which should be in the same directory."""
 		trainerName = os.path.basename(fname)
 		path = os.path.dirname(fname)
+		if trainerName.endswith('.net'):
+			path = fname
+			trainers = [os.path.basename(f) for f in glob.glob(os.path.join(path,'*.trainer'))]
+			if len(trainers) > 1:
+				logger.warning('Multiple trainers found at {}.  Loading {}.'.format(path,trainers[0]))
+			elif len(trainers) == 0:
+				logger.error('No trainers found at {}'.format(path))
+				return None
+			trainerName = trainers[0]
 		with open(os.path.join(path,trainerName,trainerName),'rb') as f:
 			trainer = dill.load(f)
 		trainer.__dict__['fname'] = os.path.join(path)

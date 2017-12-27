@@ -189,8 +189,20 @@ class ProgressTracker(DeepRoot.DeepRoot):
 
 	@classmethod
 	def load(self,fname,**args):
-		with open(fname,'rb') as f:
+		path = os.path.dirname(fname)
+		trackerName = os.path.basename(fname)
+		if trackerName.endswith('.net'):
+			path = fname
+			trackers = [os.path.basename(f) for f in glob.glob(os.path.join(path,'*.tracker'))]
+			if len(trackers) > 1:
+				logger.warning('Multiple trackers found at {}.  Loading {}.'.format(path,trackers[0]))
+			elif len(trackers) == 0:
+				logger.error('No trackers found at {}'.format(path))
+				return None
+			trackerName = trackers[0]
+		
+		with open(os.path.join(path,trackerName),'rb') as f:
 			obj = dill.load(f)
-		obj.__dict__['fname'] = fname
+		obj.__dict__['fname'] = os.path.join(path,trackerName)
 		return obj
 
