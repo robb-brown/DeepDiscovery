@@ -5,6 +5,10 @@ from collections import OrderedDict
 from .. import DeepRoot
 import time
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 cdict = {	'red' 	: 	(	(0.0,0.1,0.1),
 							(0.5,0.7,0.7),
@@ -67,7 +71,7 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		if self.figures is None:
 			self.figures = dict()
 		if not os.path.exists(self.basePath):
-			os.makedirs(self.basePath,mode=0x777)
+			os.makedirs(self.basePath,mode=0o777)
 		if not output is None:
 			self.plotOutput(example,output,display=display,**args)
 		metrics = args.get('metrics',{})
@@ -116,7 +120,7 @@ class ProgressTracker(DeepRoot.DeepRoot):
 			self.figures[metric].savefig(os.path.join(self.basePath,'{}.{}'.format(metric,self.fileType)),transparent=False,bbox_inches='tight')
 			self.figures[metric+'Detail'].savefig(os.path.join(self.basePath,'{}Detail.{}'.format(metric,self.fileType)),transparent=False,bbox_inches='tight')
 		except:
-			pass
+			logger.exception('Error saving figures')
 
 
 
@@ -170,7 +174,7 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		try:
 			self.figures['output'].savefig(os.path.join(self.basePath,'output.%s'%self.fileType),transparent=True,bbox_inches='tight')
 		except:
-			pass
+			logger.exception('Error saving figures')
 
 
 	def save(self,fname=None):

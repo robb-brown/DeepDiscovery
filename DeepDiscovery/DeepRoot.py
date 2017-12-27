@@ -5,6 +5,7 @@ class DeepRoot(object):
 		self.__dict__['modelParameters'] = dict()
 		self.__dict__['hyperParameters'] = dict()
 		self.__dict__['name'] = None
+		self.__dict__['fname'] = None
 		self.__dict__['excludeFromPickle'] = ['modelParameters']
 		return self
 
