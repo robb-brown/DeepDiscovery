@@ -101,7 +101,7 @@ class TrainingData(object):
 	def load(self,fname):
 		with open(fname,'rb') as f:
 			data = dill.load(f)
-			data.fileName = fname
+			data.fname = fname
 			return data
 
 
@@ -109,22 +109,16 @@ class TrainingData(object):
 
 class ImageTrainingData(TrainingData):
 
-	def __init__(self,examples,reserveForValidation=0.1,reserveForTest=0.1,depth=1,mode='2d',padShape=None,cropTo=None,truthComponents=None,gentleCoding=0.9,attention=None,balanceClasses=False,standardize=True,basepath='.'):
-		self.padShape = padShape
+	def __init__(self,examples,reserveForValidation=0.1,reserveForTest=0.1,truthComponents=None,gentleCoding=0.9,balanceClasses=False,attention=False,basepath='.'):
 		super(ImageTrainingData,self).__init__(examples,reserveForValidation,reserveForTest)
 		self.basepath = basepath
-		self.depth = depth
-		self.mode = mode
-		self.attention = attention
-		self.cropTo = cropTo
-		self.slice = [slice(ax[0],ax[1]) for ax in self.cropTo] if self.cropTo is not None else None
-		self.standardize = standardize
 		self.truthComponents = truthComponents
 		self.gentleCoding = gentleCoding
+		self.attention = attention
 
 
 	def preprocessExamples(self,examples):
-		basepath = self.__dict__.get('basepath',os.path.dirname(self.__dict__.get('fileName','')))
+		basepath = self.__dict__.get('basepath',os.path.dirname(self.__dict__.get('fname','')))
 		xs = []; ys = []; attentions = []
 		for example in examples:
 			t1 = time.time()
@@ -155,7 +149,7 @@ class ImageTrainingData(TrainingData):
 		
 		example = dict(input=x,truth=y,dimensionOrder=['b','z','y','x','c'])
 		
-		if not self.attention is None:
+		if not self.__dict__.get('attention',None) is None:
 			example['attention'] = self.attention.generate(example)
 
 		return example

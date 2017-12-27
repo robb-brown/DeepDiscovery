@@ -26,9 +26,11 @@ class Net(DeepRoot.DeepRoot):
 		self.__dict__['excludeFromPickle'] = ['modelParameters']
 		return self
 
-	def __init__(self,name=None,**args):
+	def __init__(self,name=None,fname=None,**args):
+		self.hyperParameters.update(name=name,fname=fname,**args)
 		self.name = name if name is not None else self.__class__.__name__
-		self.hyperParameters.update(**args)
+		fname = fname if not fname is None else self.name + '.net'
+		self.fname = os.path.join(fname,self.name+'.net') if not fname.endswith('.net') else fname
 		self.create()
 		super().__init__()
 
@@ -79,7 +81,7 @@ class Net(DeepRoot.DeepRoot):
 			will be saved as name.net/"""
 		netName = self.name + '.net'
 		defaultFname = self.__dict__.get('fname',netName)
-		fname = defaultFname if fname is None else os.path.join(fname,netName) if fname.endswith(os.path.sep) else fname
+		fname = defaultFname if fname is None else os.path.join(fname,netName) if not fname.endswith('.net') else fname
 		self.__dict__['fname'] = fname
 		self.__dict__['saveTime'] = time.time()
 		os.makedirs(fname,mode=0o777,exist_ok=True)

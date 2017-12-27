@@ -94,6 +94,8 @@ else:
 print('\n\n\n')
 
 # ------------------------- Train -----------------------------------
+# We can set separate arguments for the training and validation parts.  Here we set the dropout
+# on the input data to 0.5 for training but turn it off for validation.
 trainArgs=dict(inputDropout=0.5); validateArgs = dict(inputDropout=0.0)
 trainer.train(trainTime=0.1,examplesPerEpoch=5,trainingExamplesPerBatch=1,trainArgs=trainArgs,validateArgs=validateArgs)
 # ---------------------------------------------------------------------
@@ -101,8 +103,3 @@ trainer.train(trainTime=0.1,examplesPerEpoch=5,trainingExamplesPerBatch=1,trainA
 # ------------------------- Save the trainer, tracker and network -----------------------------------
 trainer.save()
 # ---------------------------------------------------------------------------------------------
-
-
-ex = trainingData.getTrainingExamples()
-print("Executing forward pass.  Resulting shape: {}".format(segmenter.forwardPass(ex).shape))
-print("Cost = {}".format(segmenter.evaluateCost(ex)))

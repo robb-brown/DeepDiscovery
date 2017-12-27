@@ -9,12 +9,12 @@ from ..utility import *
 
 class Segmenter3D(UNet3D):
 
-	def __init__(self,dimensions=(None,None,None,1),filterPlan=[10,20,30,40,50],filterSize=5,layerThickness=1,postUDepth=2,outputValues=2,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=True,skipChannels=1.0,name=None,**args):
+	def __init__(self,dimensions=(None,None,None,1),filterPlan=[10,20,30,40,50],filterSize=5,layerThickness=1,postUDepth=2,outputValues=2,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=True,skipChannels=1.0,name=None,fname=None,**args):
 		"""Segmenter expects images and dimensions in (batch,channels,y,x) order.
 			dimensions is optional, but should be [channels, y, x] if set
 		"""
 		self.hyperParameters['outputValues'] = outputValues
-		super().__init__(dimensions=dimensions,filterPlan=filterPlan,filterSize=filterSize,layerThickness=layerThickness,postUDepth=postUDepth,outputValues=outputValues,maxpool=maxpool,normalization=normalization,nonlinearity=nonlinearity,inputDropout=inputDropout,inputNoise=inputNoise,internalDropout=internalDropout,gentleCoding=gentleCoding,skipChannels=skipChannels,standardize=standardize,name=name,**args)
+		super().__init__(dimensions=dimensions,filterPlan=filterPlan,filterSize=filterSize,layerThickness=layerThickness,postUDepth=postUDepth,outputValues=outputValues,maxpool=maxpool,normalization=normalization,nonlinearity=nonlinearity,inputDropout=inputDropout,inputNoise=inputNoise,internalDropout=internalDropout,gentleCoding=gentleCoding,skipChannels=skipChannels,standardize=standardize,name=name,fname=fname,**args)
 
 
 	def create(self):

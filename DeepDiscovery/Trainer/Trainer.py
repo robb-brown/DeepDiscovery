@@ -49,7 +49,7 @@ class Trainer(DeepRoot.DeepRoot):
 		return self
 	
 
-	def __init__(self,net,cost,examples,progressTracker=None,name=None,metrics=dict(cost=None),**trainingArguments):
+	def __init__(self,net,cost,examples,progressTracker=None,metrics=dict(cost=None),name=None,**trainingArguments):
 		self.__dict__['examples'] = examples
 		self.__dict__['progressTracker'] = progressTracker
 		self.modelParameters.update(dict(
@@ -103,7 +103,7 @@ class Trainer(DeepRoot.DeepRoot):
 						output = tf.cast(tf.argmax(net.y,axis=-1), dtype=tf.float32)
 						truth = tf.cast(tf.argmax(net.yp,axis=-1), dtype=tf.float32)
 						intersection = tf.reduce_sum(tf.reduce_sum(tf.multiply(output, truth), axis=-1),axis=-1)
-						union = tf.reduce_sum(tf.reduce_sum(tf.cast(tf.add(output, truth)>= 1, dtype=tf.float32), axis=-1),axis=-1)
+						union = tf.reduce_sum(tf.reduce_sum(tf.cast(tf.add(output, truth)>= 1, dtype=tf.float32), axis=-1),axis=-1) + 0.0000001
 						jaccard = tf.reduce_mean(intersection / union)
 						metrics[metric] = jaccard
 			self.metrics = metrics
@@ -168,9 +168,13 @@ class Trainer(DeepRoot.DeepRoot):
 			epochTime = time.time() - epochT1
 			epochT1 = time.time()
 			try:
-				logger.info("After epoch {} validation cost is {:0.2f} ({:0.1f} s / iteration)".format(self.epoch,result['cost'],epochTime/examplesPerEpoch))
+				s = "After epoch {} validation: ".format(self.epoch) + ' | '.join(["{} = {:0.2g}".format(metric,result[metric]) for metric in result.keys() if not metric =='output'])
+				s += "  ({:0.1f} s / iteration)".format(epochTime/examplesPerEpoch)
+				logger.info(s)
 			except:
-				logger.info("After epoch {} validation cost is {} ({:0.1f} s / iteration)".format(self.epoch,result['cost'],epochTime/examplesPerEpoch))
+				s = "After epoch {} validation: ".format(self.epoch) + ' | '.join(["{} = {}".format(metric,result[metric]) for metric in result.keys() if not metric =='output'])
+				s += "  ({:0.1f} s / iteration)".format(epochTime/examplesPerEpoch)
+				logger.info(s)
 
 			if saveEvery and self.elapsed-lastSave > saveEvery*3600:
 				totalElapsed = self.previouslyElapsed + self.elapsed

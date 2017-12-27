@@ -113,7 +113,7 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 
 class UNet2D(Net):
 
-	def __init__(self,dimensions=(None,None,1),filterPlan=[10,20,30,40,50],filterSize=(5,5),layerThickness=1,postUDepth=2,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=None,name=None,skipChannels=1.0,**args):
+	def __init__(self,dimensions=(None,None,1),filterPlan=[10,20,30,40,50],filterSize=(5,5),layerThickness=1,postUDepth=2,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=None,name=None,fname=None,skipChannels=1.0,**args):
 		self.hyperParameters.update(dict(dropoutProbability=None,
 										dimensions=[None] + list(dimensions),
 										filterPlan = filterPlan,
@@ -139,7 +139,7 @@ class UNet2D(Net):
 												pad = len(self.filterPlan),
 												mode = '2d',
 												)
-		super().__init__()
+		super().__init__(fname=fname,name=name)
 
 
 	def create(self):
@@ -236,7 +236,7 @@ class UNet3D(Net):
 												pad = len(self.filterPlan),
 												mode = '3d',
 												)
-		super().__init__()
+		super().__init__(fname=fname,name=name)
 
 
 	def create(self):
