@@ -6,6 +6,11 @@ import dill
 
 from .. import utility
 
+try:
+	a = unicode
+except:
+	unicode = str
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -36,12 +41,16 @@ class TrainingData(object):
 	def allocateExamples(self,examples,reserveForValidation=0.1,reserveForTest=0.1,balanceClasses=False,classes=None):
 		if classes is None:
 			if issubclass(examples[0].__class__,dict):
-				classes = [numpy.argmax(i['truth']) for i in examples]
+				if 'truth' in examples[0]:
+					classes = [numpy.argmax(i['truth']) for i in examples]
+				else:
+					classes = None
 			else:
 				examples = numpy.array(examples)
 				classes = [numpy.argmax(i) for i in examples[:,1]]
-			classes = dict([(c,set(numpy.where(classes==c)[0])) for c in numpy.unique(classes)])
-			classN = len(classes.keys())
+			if not classes is None:
+				classes = dict([(c,set(numpy.where(classes==c)[0])) for c in numpy.unique(classes)])
+				classN = len(classes.keys())
 
 		allocation = set(range(0,len(examples)))
 		toSelect = reserveForTest if reserveForTest >= 1 else int(math.ceil(len(allocation)*reserveForTest))
@@ -95,6 +104,7 @@ class TrainingData(object):
 	def save(self,fname=None):
 		with open(fname,'wb') as f:
 			dill.dump(self,f,protocol=dill.HIGHEST_PROTOCOL)
+		self.fname = fname
 		return fname
 
 	@classmethod
@@ -109,10 +119,11 @@ class TrainingData(object):
 
 class ImageTrainingData(TrainingData):
 
-	def __init__(self,examples,reserveForValidation=0.1,reserveForTest=0.1,truthComponents=None,gentleCoding=0.9,balanceClasses=False,attention=False,basepath='.'):
+	def __init__(self,examples,reserveForValidation=0.1,reserveForTest=0.1,truthComponents=None,inputChannels=None,gentleCoding=0.9,balanceClasses=False,attention=None,basepath=None):
 		super(ImageTrainingData,self).__init__(examples,reserveForValidation,reserveForTest)
 		self.basepath = basepath
 		self.truthComponents = truthComponents
+		self.inputChannels = inputChannels
 		self.gentleCoding = gentleCoding
 		self.attention = attention
 
@@ -123,31 +134,46 @@ class ImageTrainingData(TrainingData):
 		xs = []; ys = []; attentions = []
 		for example in examples:
 			t1 = time.time()
-			if 'truthChannels' in example:
-				y = numpy.array([nib.load(os.path.join(basepath,example[channel])).get_data() for channel in example['truthChannels']])
+			if not self.truthComponents is None and isinstance(self.truthComponents[0],(str,unicode)):
+				truthChannels = self.truthComponents
+			elif 'truthChannels' in example:
+				truthChannels = example['truthChannels']
+			else:
+				truthChannels = None
+			if not truthChannels is None:
+				y = numpy.array([nib.load(os.path.join(basepath,example[channel])).get_data() for channel in truthChannels])
+				normalizer = numpy.sum(y,axis=0); normalizer = numpy.where(normalizer>1.0,normalizer,1.0)
+				y = y / normalizer
+				y0 = numpy.expand_dims(1.0-numpy.sum(y,axis=0),axis=0)
+				y = numpy.concatenate([y0,y],axis=0)
+				y = y.transpose(list(range(1,len(y.shape)))+[0])
 			else:
 				truth = example.get(example['truth'],example['truth'])
 				y = nib.load(os.path.join(basepath,truth)).get_data()
 				y = numpy.expand_dims(y,-1)
-			
-			if 'inputChannels' in example:
-				x = numpy.array([nib.load(os.path.join(basepath,example[channel])).get_data() for channel in example['inputChannels']])
+				# Convert y to one hot
+				if not self.truthComponents is None:
+					y.shape = y.shape[0:-1]
+					y = utility.convertToOneHot(y,coding=self.truthComponents,gentleCoding=self.gentleCoding)
+				
+			inputChannels = self.inputChannels if not self.inputChannels is None else example['inputChannels'] if 'inputChannels' in example else None
+			if not inputChannels is None:
+				x = numpy.array([nib.load(os.path.join(basepath,example[channel])).get_data() for channel in inputChannels])
+				x = x.transpose(list(range(1,len(x.shape)))+[0])								
 			else:
 				x = nib.load(os.path.join(basepath,example['input'])).get_data()
 				x = numpy.expand_dims(x,-1)
 
 			t2 = time.time()
-			logger.debug("Loading example {} took {:0.2f} ms".format(os.path.abspath(example['input']),(t2-t1)*1000))
+			if inputChannels is None:
+				logger.debug("Loading example {} took {:0.2f} ms".format(os.path.abspath(example['input']),(t2-t1)*1000))
+			else:
+				logger.debug("Loading example {} took {:0.2f} ms".format(os.path.abspath(example[inputChannels[0]]),(t2-t1)*1000))
 
 			xs.append(x); ys.append(y)
 
 		x = numpy.array(xs); y = numpy.array(ys)
 
-		# Convert y to one hot
-		if not self.truthComponents is None:
-			y.shape = y.shape[0:-1]
-			y = utility.convertToOneHot(y,coding=self.truthComponents,gentleCoding=self.gentleCoding)
-		
 		example = dict(input=x,truth=y,dimensionOrder=['b','z','y','x','c'])
 		
 		if not self.__dict__.get('attention',None) is None:
@@ -331,7 +357,6 @@ class SpotStandardization(object):
 
 
 class EdgeBiasedAttention(object):
-	
 	def __init__(self,edgeFalloff=10,background=0.01,approximate=True,balanceClasses=True,gentleBalance=10.0):
 		self.edgeFalloff = edgeFalloff; self.background = background; 
 		self.approximate = approximate

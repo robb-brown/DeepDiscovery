@@ -14,7 +14,6 @@ class Segmenter2D(UNet2D):
 			dimensions is optional, but should be [y, x, channels] if set
 		"""
 		self.hyperParameters['outputValues'] = outputValues
-		
 		super().__init__(dimensions=dimensions,filterPlan=filterPlan,filterSize=filterSize,layerThickness=layerThickness,postUDepth=postUDepth,outputValues=outputValues,maxpool=maxpool,normalization=normalization,nonlinearity=nonlinearity,inputDropout=inputDropout,inputNoise=inputNoise,internalDropout=internalDropout,gentleCoding=gentleCoding,skipChannels=skipChannels,standardize=standardize,name=name,fname=fname,**args)
 
 
