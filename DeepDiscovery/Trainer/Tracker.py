@@ -70,7 +70,7 @@ class ProgressTracker(DeepRoot.DeepRoot):
 	def plotMetrics(self,example,output,display=True,**args):
 		if self.figures is None:
 			self.figures = dict()
-		os.makedirs(os.path.join(self.basePath,self.name),mode=0o777,exist_ok=True)
+		os.makedirs(os.path.join(self.basePath,self.name),exist_ok=True)
 		if not output is None:
 			self.plotOutput(example,output,display=display,**args)
 		metrics = args.get('metrics',{})

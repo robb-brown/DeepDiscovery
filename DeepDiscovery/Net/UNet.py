@@ -211,7 +211,7 @@ class UNet2D(Net):
 
 class UNet3D(Net):
 
-	def __init__(self,dimensions=(None,None,None,1),filterPlan=[10,20,30,40,50],filterSize=5,layerThickness=1,postUDepth=2,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=None,name=None,skipChannels=1.0,**args):
+	def __init__(self,dimensions=(None,None,None,1),filterPlan=[10,20,30,40,50],filterSize=5,layerThickness=1,postUDepth=2,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=None,name=None,fname=None,skipChannels=1.0,**args):
 		self.hyperParameters.update(dict(dropoutProbability=None,
 										dimensions=[None] + list(dimensions),
 										filterPlan = filterPlan,
