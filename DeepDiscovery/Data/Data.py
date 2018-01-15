@@ -156,7 +156,11 @@ class ImageTrainingData(TrainingData):
 					y.shape = y.shape[0:-1]
 					y = utility.convertToOneHot(y,coding=self.truthComponents,gentleCoding=self.gentleCoding)
 				
+<<<<<<< HEAD
 			inputChannels = self.inputChannels if not self.__dict__.get('inputChannels',None) is None else example['inputChannels'] if 'inputChannels' in example else None
+=======
+			inputChannels = self.inputChannels if not self.__dict__.get('inputChannels',None) is None else example.get('inputChannels',None) if 'inputChannels' in example else None
+>>>>>>> 6ea9c47a29a947da11b1d426737fdf49a41f7331
 			if not inputChannels is None:
 				x = numpy.array([nib.load(os.path.join(basepath,example[channel])).get_data() for channel in inputChannels])
 				x = x.transpose(list(range(1,len(x.shape)))+[0])								
