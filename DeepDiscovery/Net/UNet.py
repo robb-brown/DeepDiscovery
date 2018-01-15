@@ -38,7 +38,7 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 		if normalization is not None:
 			pass							# ROBB - add normalization sometime?
 		if not dropout is None:
-			net = tf.layers.dropout(net,rate=dropout,name='UNet-DownDropout{}'.format(level+1),data_format='channels_last')
+			net = tf.layers.dropout(net,rate=dropout,name='UNet-DownDropout{}'.format(level+1))
 		if maxpool:
 			net = maxpoolF(	inputs=net,
 							strides = 1,
@@ -58,7 +58,7 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 			if not normalization is None:
 				pass
 			if not dropout is None:
-				net = tf.layers.dropout(net,rate=dropout,name='UNet-DownDropout{}'.format(level+1),data_format='channels_last')
+				net = tf.layers.dropout(net,rate=dropout,name='UNet-DownDropout{}'.format(level+1))
 		downLayers.append(net)	
 
 	bottom = net
@@ -89,7 +89,7 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 		if not normalization is None:
 			pass
 		if not dropout is None:
-			net = tf.layers.dropout(net,rate=dropout,name='UNet-UpDropout{}'.format(index+1),data_format='channels_last')
+			net = tf.layers.dropout(net,rate=dropout,name='UNet-UpDropout{}'.format(index+1))
 		if not index == len(filterPlan)-1:
 			for extraIndex in range(layerThickness-1):
 				net = convDown(	inputs=net,
@@ -103,7 +103,7 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 				if normalization is not None:
 					pass
 				if not dropout is None:
-					net = tf.layers.dropout(net,rate=dropout,name='UNet-UpDropout{}'.format(index+1),data_format='channels_last')
+					net = tf.layers.dropout(net,rate=dropout,name='UNet-UpDropout{}'.format(index+1))
 			
 	return net
 
@@ -161,7 +161,7 @@ class UNet2D(Net):
 			else:
 				self.hyperParameters['internalDropoutProbability'] = None
 			if self.inputNoise:
-				self.hyperParameters['inputNoiseSigma'] = tf.placeholder('float',name='inputNoiseSigma')
+				self.hyperParameters['inputNoiseSigma'] = tf.placeholder('float',name='inputNoise')
 			else:
 				self.hyperParameters['inputNoiseSigma'] = None
 
@@ -169,7 +169,7 @@ class UNet2D(Net):
 			if self.inputDropout:
 				net = self.addLayer(tf.layers.Dropout(rate=self.inputDropoutProbability,name='InputDropout')).apply(net,training=True)
 			if self.inputNoise:
-				net = net + tf.random_normal(shape=tf.shape(net), mean=0.0, stddev=self.inputNoiseSigma, dtype='float')
+				net = tf.reshape(net + tf.random_normal(shape=tf.shape(net), mean=0.0, stddev=self.inputNoiseSigma, dtype='float'),tf.shape(net))
 
 			net = uNet(net,filterPlan = self.filterPlan,filterSize = self.filterSize,maxpool=self.maxpool,layerThickness=self.layerThickness,normalization=self.normalization,dimensions=2,skip=self.skipChannels)
 			for i in range(self.postUDepth):
@@ -185,7 +185,7 @@ class UNet2D(Net):
 				if self.normalization is not None:
 					pass
 				if self.internalDropout:
-					net = tf.layers.dropout(net,rate=self.internalDropoutProbability,name='PostUDropout{}'.format(i+1),data_format='channels_last')
+					net = tf.layers.dropout(net,rate=self.internalDropoutProbability,name='PostUDropout{}'.format(i+1))
 			self.requiredInputs = [self.x]
 			if self.inputDropoutProbability is not None:
 				self.requiredInputs += [self.inputDropoutProbability]
@@ -258,7 +258,7 @@ class UNet3D(Net):
 			else:
 				self.hyperParameters['internalDropoutProbability'] = None
 			if self.inputNoise:
-				self.hyperParameters['inputNoiseSigma'] = tf.placeholder('float',name='inputNoiseSigma')
+				self.hyperParameters['inputNoiseSigma'] = tf.placeholder('float',name='inputNoise')
 			else:
 				self.hyperParameters['inputNoiseSigma'] = None
 
@@ -266,6 +266,7 @@ class UNet3D(Net):
 			if self.inputDropout:
 				net = self.addLayer(tf.layers.Dropout(rate=self.inputDropoutProbability,name='InputDropout')).apply(net,training=True)
 			if self.inputNoise:
+				logger.info('Using input noise')
 				net = net + tf.random_normal(shape=tf.shape(net), mean=0.0, stddev=self.inputNoiseSigma, dtype='float')
 
 			net = uNet(net,filterPlan = self.filterPlan,filterSize = self.filterSize,maxpool=self.maxpool,layerThickness=self.layerThickness,normalization=self.normalization,dimensions=3,skip=self.skipChannels)
@@ -282,7 +283,7 @@ class UNet3D(Net):
 				if self.normalization is not None:
 					pass
 				if self.internalDropout:
-					net = tf.layers.dropout(net,rate=self.internalDropoutProbability,name='PostUDropout{}'.format(i+1),data_format='channels_last')
+					net = tf.layers.dropout(net,rate=self.internalDropoutProbability,name='PostUDropout{}'.format(i+1))
 			self.requiredInputs = [self.x]
 			if self.inputDropoutProbability is not None:
 				self.requiredInputs += [self.inputDropoutProbability]
