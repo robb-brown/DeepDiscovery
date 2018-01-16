@@ -128,7 +128,7 @@ class UNet2D(Net):
 										inputNoise = inputNoise,
 										gentleCoding = gentleCoding,
 										skipChannels = skipChannels,
-										**args,
+										**args
 										))
 
 		self.hyperParameters['standardize'] = Data.SpotStandardization() if standardize == True else standardize
@@ -226,7 +226,7 @@ class UNet3D(Net):
 										inputNoise = inputNoise,
 										gentleCoding = gentleCoding,
 										skipChannels = skipChannels,
-										**args,
+										**args
 										))
 		super().__init__()
 
