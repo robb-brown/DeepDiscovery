@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup,find_packages
 
 setup(name='DeepDiscovery',
 	version='0.1',
@@ -7,7 +7,7 @@ setup(name='DeepDiscovery',
 	author='Robert A. Brown',
 	author_email='robert.brown@mcgill.ca',
 	license='MIT',
-	packages=['DeepDiscovery'],
+	packages=find_packages(),
 	install_requires=[
 		#'tensorflow-gpu',
 		'matplotlib',
