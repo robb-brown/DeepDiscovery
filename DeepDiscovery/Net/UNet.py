@@ -23,6 +23,16 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 	stride = 1 if maxpool else 2
 	layerThickness = 1 if layerThickness < 1 else layerThickness
 	net = input
+	# Robb DEBUG: see if this helps eye fat segmentation
+	net = convDown(	inputs=net,
+					filters=nFilters,
+					kernel_size=filterSize,
+					strides = 1,
+					padding='same',
+					activation = activation,
+					kernel_initializer = init,
+					data_format='channels_last',
+					name = 'UNet-Initial')
 	downLayers.append(net)
 
 	for level,nFilters in enumerate(filterPlan):
