@@ -276,7 +276,6 @@ class UNet3D(Net):
 			if self.inputDropout:
 				net = self.addLayer(tf.layers.Dropout(rate=self.inputDropoutProbability,name='InputDropout')).apply(net,training=True)
 			if self.inputNoise:
-				logger.info('Using input noise')
 				net = tf.reshape(net + tf.random_normal(shape=tf.shape(net), mean=0.0, stddev=self.inputNoiseSigma, dtype='float'),tf.shape(net))
 
 			net = uNet(net,filterPlan = self.filterPlan,filterSize = self.filterSize,maxpool=self.maxpool,layerThickness=self.layerThickness,normalization=self.normalization,dimensions=3,skip=self.skipChannels)
