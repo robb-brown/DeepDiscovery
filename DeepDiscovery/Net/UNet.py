@@ -139,8 +139,7 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 class UNet2D(Net):
 
 	def __init__(self,dimensions=(None,None,1),filterPlan=[10,20,30,40,50],filterSize=(5,5),layerThickness=1,postUDepth=2,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=None,name=None,fname=None,skipChannels=1.0,**args):
-		self.hyperParameters.update(dict(dropoutProbability=None,
-										dimensions=[None] + list(dimensions),
+		self.hyperParameters.update(dict(dimensions=[None] + list(dimensions),
 										filterPlan = filterPlan,
 										filterSize = filterSize,
 										layerThickness = layerThickness,
@@ -155,7 +154,6 @@ class UNet2D(Net):
 										skipChannels = skipChannels,
 										**args
 										))
-
 		self.hyperParameters['standardize'] = Data.SpotStandardization() if standardize == True else standardize
 		self.hyperParameters['preprocessor'] = \
 							Data.ImagePreprocessor(	requiredDimensionOrder = ['b','y','x','c'],
@@ -175,20 +173,20 @@ class UNet2D(Net):
 			self.x = tf.placeholder('float',shape=self.dimensions,name='input')
 		
 			self.yp = tf.placeholder('float',shape=[None,None,None,None],name='truth')
-			self.hyperParameters['attentionWeight'] = tf.placeholder('float',shape=[None,None,None,None],name='attention')
+			self.modelParameters['attentionWeight'] = tf.placeholder('float',shape=[None,None,None,None],name='attention')
 
 			if self.inputDropout:
-				self.hyperParameters['inputDropoutProbability'] = tf.placeholder_with_default(0.99,shape=(),name='inputDropout')
+				self.modelParameters['inputDropoutProbability'] = tf.placeholder_with_default(0.99,shape=(),name='inputDropout')
 			else:
-				self.hyperParameters['inputDropoutProbability'] = None
+				self.modelParameters['inputDropoutProbability'] = None
 			if self.internalDropout:
-				self.hyperParameters['internalDropoutProbability'] = tf.placeholder('float',name='internalDropout')
+				self.modelParameters['internalDropoutProbability'] = tf.placeholder('float',name='internalDropout')
 			else:
-				self.hyperParameters['internalDropoutProbability'] = None
+				self.modelParameters['internalDropoutProbability'] = None
 			if self.inputNoise:
-				self.hyperParameters['inputNoiseSigma'] = tf.placeholder('float',name='inputNoise')
+				self.modelParameters['inputNoiseSigma'] = tf.placeholder('float',name='inputNoise')
 			else:
-				self.hyperParameters['inputNoiseSigma'] = None
+				self.modelParameters['inputNoiseSigma'] = None
 
 			net = inLayer = self.x
 			if self.inputDropout:
@@ -272,20 +270,20 @@ class UNet3D(Net):
 			self.x = tf.placeholder('float',shape=self.dimensions,name='input')
 
 			self.yp = tf.placeholder('float',shape=[None,None,None,None,None],name='truth')
-			self.hyperParameters['attentionWeight'] = tf.placeholder('float',shape=[None,None,None,None,None],name='attention')
+			self.modelParameters['attentionWeight'] = tf.placeholder('float',shape=[None,None,None,None,None],name='attention')
 
 			if self.inputDropout:
-				self.hyperParameters['inputDropoutProbability'] = tf.placeholder_with_default(0.99,shape=(),name='inputDropout')
+				self.modelParameters['inputDropoutProbability'] = tf.placeholder_with_default(0.99,shape=(),name='inputDropout')
 			else:
-				self.hyperParameters['inputDropoutProbability'] = None
+				self.modelParameters['inputDropoutProbability'] = None
 			if self.internalDropout:
-				self.hyperParameters['internalDropoutProbability'] = tf.placeholder('float',name='internalDropout')
+				self.modelParameters['internalDropoutProbability'] = tf.placeholder('float',name='internalDropout')
 			else:
-				self.hyperParameters['internalDropoutProbability'] = None
+				self.modelParameters['internalDropoutProbability'] = None
 			if self.inputNoise:
-				self.hyperParameters['inputNoiseSigma'] = tf.placeholder('float',name='inputNoise')
+				self.modelParameters['inputNoiseSigma'] = tf.placeholder('float',name='inputNoise')
 			else:
-				self.hyperParameters['inputNoiseSigma'] = None
+				self.modelParameters['inputNoiseSigma'] = None
 
 			net = inLayer = self.x
 			if self.inputDropout:

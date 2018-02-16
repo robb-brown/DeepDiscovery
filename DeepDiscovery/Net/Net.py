@@ -23,7 +23,7 @@ class Net(DeepRoot.DeepRoot):
 									net=None, update = None))
 		self.__dict__['lockedParameters'] = set()
 		self.__dict__['requiredInputs'] = []
-		self.__dict__['excludeFromPickle'] = ['modelParameters']
+		self.__dict__['excludeFromPickle'] = ['modelParameters','requiredInputs']
 		return self
 
 	def __init__(self,name=None,fname=None,**args):
@@ -85,6 +85,7 @@ class Net(DeepRoot.DeepRoot):
 		self.__dict__['fname'] = fname
 		self.__dict__['saveTime'] = time.time()
 		os.makedirs(fname,mode=0o777,exist_ok=True)
+		
 		with open(os.path.join(fname,netName),'wb') as f:
 			dill.dump(self,f,protocol=dill.HIGHEST_PROTOCOL)
 		
