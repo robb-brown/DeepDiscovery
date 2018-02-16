@@ -103,7 +103,8 @@ class TrainingData(object):
 
 	def save(self,fname=None):
 		with open(fname,'wb') as f:
-			dill.dump(self,f,protocol=dill.HIGHEST_PROTOCOL)
+#			dill.dump(self,f,protocol=dill.HIGHEST_PROTOCOL)
+			dill.dump(self,f,protocol=2)
 		self.fname = fname
 		return fname
 
