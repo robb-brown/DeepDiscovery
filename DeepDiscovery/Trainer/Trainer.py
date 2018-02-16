@@ -9,8 +9,7 @@ class CostFunction(DeepRoot.DeepRoot):
 	
 	def __new__(cls,*args,**kwargs):
 		self = super().__new__(cls)
-		self.__dict__['modelParameters'].update(dict(requiredInputs=[]))
-		self.__dict__['hyperParameters']['net'] = None
+		self.__dict__['modelParameters'].update(dict(requiredInputs=[],net=None))
 		return self
 	
 	def create(self):
@@ -185,7 +184,8 @@ class Trainer(DeepRoot.DeepRoot):
 				elapsedModifier,elapsedUnits = (1.,'s') if totalElapsed < 60*5 \
 					else (1./60,'m') if totalElapsed < 3600*2 \
 					else (1./3600,'h')
-				checkpointLabel = '{:0.2fs}'.format(totalElapsed*elapsedModifier,elapsedUnits)
+				print('Saving Checkpoint')
+				checkpointLabel = '{:0.2f}{}'.format(totalElapsed*elapsedModifier,elapsedUnits)
 				self.net.saveCheckpoint(label=checkpointLabel)
 				logger.info("************ Checkpoint {} saved ************".format(checkpointLabel))
 				lastSave = self.elapsed

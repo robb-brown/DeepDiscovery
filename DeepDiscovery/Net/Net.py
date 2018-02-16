@@ -61,7 +61,7 @@ class Net(DeepRoot.DeepRoot):
 		return self.output
 
 
-	# Pickling support
+	# Pickling support	
 	def saveCheckpoint(self,label=None,write_meta_graph=False):
 		netName = self.name + ('-{}'.format(label) if not label is None else '')
 		self.tfSaver.save(tf.get_default_session(),os.path.join(self.fname,netName),write_meta_graph=write_meta_graph)

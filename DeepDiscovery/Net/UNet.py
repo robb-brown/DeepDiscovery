@@ -11,6 +11,20 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def upsample(x,factor,dataFormat='channels_last',name='repeat'):
+	if dataFormat == 'channels_first':
+		startingAxis = 2
+	elif dataFormat == 'channels_last':
+		startingAxis = 1
+	else:
+		raise ValueError('Invalid dataFormat:',dataFormat)
+		return
+	with tf.variable_scope(name):
+		for axis in range(startingAxis,startingAxis+len(x.shape)-2):
+			x = tf.keras.backend.repeat_elements(x,factor,axis=axis)
+	return x
+		
+
 
 def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropout=None,normalization=None,activation=tf.nn.relu,dimensions=3,skip=1.0):
 	init = tf.contrib.layers.xavier_initializer()
@@ -24,17 +38,17 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 	layerThickness = 1 if layerThickness < 1 else layerThickness
 	net = input
 	# Robb DEBUG: see if this helps eye fat segmentation
-	net = convDown(	inputs=net,
-					filters=filterPlan[0],
-					kernel_size=filterSize,
-					strides = 1,
-					padding='same',
-					activation = activation,
-					kernel_initializer = init,
-					data_format='channels_last',
-					name = 'UNet-Initial')
-	downLayers.append(net)
+	# net = convDown(	inputs=net,
+	# 				filters=filterPlan[0],
+	# 				kernel_size=filterSize,
+	# 				strides = 1,
+	# 				padding='same',
+	# 				activation = activation,
+	# 				kernel_initializer = init,
+	# 				data_format='channels_last',
+	# 				name = 'UNet-Initial')
 
+	downLayers.append(net)
 	for level,nFilters in enumerate(filterPlan):
 		net = convDown(	inputs=net,
 						filters=nFilters,
@@ -76,11 +90,11 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 	logger.debug('U Up')
 	for index in range(0,len(filterPlan)):
 		nFilters = filterPlan[-1-index]
-	
-		net = convUp(	inputs=net,
+		net = upsample(net,stride)
+		net = convDown(	inputs=net,
 						filters=nFilters,
 						kernel_size=filterSize,
-						strides = stride,
+						strides = 1,
 						padding='same',
 						data_format='channels_last',
 						activation = activation,
@@ -89,6 +103,7 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 		if not index == len(filterPlan):
 			if not skip is None:
 				skipChannels = downLayers[::-1][index+1]
+				#print('net is: {}; Merging {} from layer {}'.format(net.shape,skipChannels.shape,len(downLayers)-(index+1)))
 				if isinstance(skip,float):
 					localSkip = int(math.ceil(skipChannels.shape[-1].value*skip))
 				else:
