@@ -355,6 +355,25 @@ class SpotStandardization(object):
 		return x
 
 
+class GlobalStandardization(SpotStandardization):
+
+	def __init__(self,axes=['z','y','x'],method='mean'):
+		self.axes = axes; self.method = method
+
+	def standardize(self,x,dimensionOrder):
+		standardizerShape = [1 if dimensionOrder[d] in self.axes else dim for d,dim in enumerate(x.shape)]
+		overAxes = tuple([dimensionOrder.index(d) for d in self.axes])
+
+		if self.method == 'mean':
+			average = numpy.reshape(numpy.average(x,axis=overAxes),standardizerShape)
+			std = numpy.reshape(numpy.std(x,axis=overAxes),standardizerShape)
+		else:
+			average = numpy.reshape(numpy.median(x,axis=overAxes),standardizerShape)
+			std = numpy.reshape(numpy.percentile(x, 75,axis=overAxes) - numpy.percentile(x, 25,axis=overAxes),standardizerShape)			
+		x = (x - average) / std
+		return x
+
+
 
 
 class EdgeBiasedAttention(object):
