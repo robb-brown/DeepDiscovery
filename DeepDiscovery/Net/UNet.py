@@ -90,7 +90,20 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 	logger.debug('U Up')
 	for index in range(0,len(filterPlan)):
 		nFilters = filterPlan[-1-index]
+		# Upsample
 		net = upsample(net,stride)
+		# Concatenation with skip layers
+		if not skip is None:
+			skipChannels = downLayers[::-1][index+1]
+			#print('net is: {}; Merging {} from layer {}'.format(net.shape,skipChannels.shape,len(downLayers)-(index+1)))
+			if isinstance(skip,float):
+				localSkip = int(math.ceil(skipChannels.shape[-1].value*skip))
+			else:
+				localSkip = skip
+			if localSkip > 0:
+				skipChannels = skipChannels[...,0:localSkip]
+				net = tf.concat([net,skipChannels],axis=-1,name='UNet-UpConcat{}'.format(index+1))
+		
 		net = convDown(	inputs=net,
 						filters=nFilters,
 						kernel_size=filterSize,
@@ -100,17 +113,6 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 						activation = activation,
 						kernel_initializer = init,
 						name = 'UNet-UpConv{}'.format(index+1))
-		if not index == len(filterPlan):
-			if not skip is None:
-				skipChannels = downLayers[::-1][index+1]
-				#print('net is: {}; Merging {} from layer {}'.format(net.shape,skipChannels.shape,len(downLayers)-(index+1)))
-				if isinstance(skip,float):
-					localSkip = int(math.ceil(skipChannels.shape[-1].value*skip))
-				else:
-					localSkip = skip
-				if localSkip > 0:
-					skipChannels = skipChannels[...,0:localSkip]
-					net = tf.concat([net,skipChannels],axis=-1,name='UNet-UpConcat{}'.format(index+1))
 		if not normalization is None:
 			pass
 		if not dropout is None:
