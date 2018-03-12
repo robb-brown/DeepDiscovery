@@ -36,7 +36,7 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		self.__dict__['modelParameters']['figures'] = {}
 		return self
 
-	def __init__(self,figures={},logPlots=True,plotEvery=1,basePath='./tracker',fileType='pdf',name=None,**plotArgs):
+	def __init__(self,figures={},logPlots=True,plotEvery=1,basePath='./tracker',fileType='png',name=None,**plotArgs):
 		self.name = name if name is not None else self.__class__.__name__
 		self.modelParameters['figures'] = figures
 		self.__dict__.update(dict(
@@ -145,7 +145,7 @@ class ProgressTracker(DeepRoot.DeepRoot):
 			midSlice = numpy.argmax(numpy.sum(truth,axis=(1,2)))
 		else:
 			midSlice = truth.shape[0] / 2
-		
+
 		axis.imshow(inputImage[midSlice],cmap=pylab.cm.gray,origin='lower')
 		axis.imshow(output[midSlice],cmap=cmap,origin='lower',alpha=0.3,vmin=0,vmax=1.0)
 		axis.contour(truth[midSlice],colors=['b'],alpha=0.1,linewidths=1,origin='lower')
@@ -199,9 +199,8 @@ class ProgressTracker(DeepRoot.DeepRoot):
 				logger.error('No trackers found at {}'.format(path))
 				return None
 			trackerName = trackers[0]
-		
+
 		with open(os.path.join(path,trackerName),'rb') as f:
 			obj = dill.load(f)
 		obj.__dict__['fname'] = os.path.join(path,trackerName)
 		return obj
-

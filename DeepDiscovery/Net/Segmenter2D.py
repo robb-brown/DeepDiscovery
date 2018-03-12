@@ -22,9 +22,9 @@ class Segmenter2D(UNet2D):
 		with tf.variable_scope(self.name):
 			self.modelParameters['logits'] = None
 			init = tf.contrib.layers.xavier_initializer()
-			self.net = tf.layers.conv2d(self.net, filters=self.outputValues, kernel_size = 1, padding='same', activation=None,kernel_initializer = None,data_format='channels_last')
+			self.net = self.addLayer(tf.layers.conv2d(self.net, filters=self.outputValues, kernel_size = 1, padding='same', activation=None,kernel_initializer = None,data_format='channels_last'))
 			self.logits = self.net
-			self.y = self.output = self.net = tf.nn.softmax(self.logits,-1)
+			self.y = self.output = self.net = self.addLayer(tf.nn.softmax(self.logits,-1,name='softmax'))
 
 
 	def segment(self,image):
@@ -40,10 +40,9 @@ class Segmenter2D(UNet2D):
 
 	def preprocessInput(self,example,dimensionOrder=None):
 		dimensionOrder = example.get('dimensionOrder',None) if dimensionOrder is None else dimensionOrder
-		ret = dict(); ret.update(example); 
+		ret = dict(); ret.update(example);
 		ret['input'] = self.preprocessor.process(example['input'],dimensionOrder=dimensionOrder)
 		ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder,oneHot=True)
 		if 'attention' in example:
 			ret['attention'] = self.preprocessor.process(example['attention'],standardize=False)
 		return ret
-	

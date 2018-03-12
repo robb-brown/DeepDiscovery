@@ -22,10 +22,10 @@ class Segmenter3D(UNet3D):
 		with tf.variable_scope(self.name):
 			self.modelParameters['logits'] = None
 			init = tf.contrib.layers.xavier_initializer()
-			self.net = tf.layers.conv3d(self.net, filters=self.outputValues, kernel_size = 1, padding='same', activation=None,kernel_initializer = None,data_format='channels_last')
+			self.net = self.addLayer(tf.layers.conv3d(self.net, filters=self.outputValues, kernel_size = 1, padding='same', activation=None,kernel_initializer = None,data_format='channels_last'))
 			self.logits = self.net
-			self.y = self.output = self.net = tf.nn.softmax(self.logits,-1)
-	
+			self.y = self.output = self.net = self.addLayer(tf.nn.softmax(self.logits,-1,name='softmax'))
+
 
 	def segment(self,image):
 		# output = lasagne.layers.get_output(self.net)

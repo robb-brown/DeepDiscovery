@@ -23,7 +23,7 @@ def upsample(x,factor,dataFormat='channels_last',name='repeat'):
 		for axis in range(startingAxis,startingAxis+len(x.shape)-2):
 			x = tf.keras.backend.repeat_elements(x,factor,axis=axis)
 	return x
-		
+
 
 
 def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropout=None,normalization=None,activation=tf.nn.relu,dimensions=3,skip=1.0):
@@ -32,8 +32,8 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 		convDown = tf.layers.conv2d; convUp = tf.layers.conv2d_transpose; maxpoolF = tf.layers.max_pooling2d
 	else:
 		convDown = tf.layers.conv3d; convUp = tf.layers.conv3d_transpose; maxpoolF = tf.layers.max_pooling3d
-	
-	downLayers = [];
+
+	downLayers = []; layers = OrderedDict()
 	stride = 1 if maxpool else 2
 	layerThickness = 1 if layerThickness < 1 else layerThickness
 	net = input
@@ -58,18 +58,18 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 						activation = activation,
 						kernel_initializer = init,
 						data_format='channels_last',
-						name = 'UNet-DownConv{}'.format(level+1))
+						name = 'UNet-DownConv{}'.format(level+1)); layers[net.name] = net
 		if normalization is not None:
 			pass							# ROBB - add normalization sometime?
 		if not dropout is None:
-			net = tf.layers.dropout(net,rate=dropout,name='UNet-DownDropout{}'.format(level+1))
+			net = tf.layers.dropout(net,rate=dropout,name='UNet-DownDropout{}'.format(level+1)); layers[net.name] = net
 		if maxpool:
 			net = maxpoolF(	inputs=net,
 							strides = 1,
 							pool_size = 2,
 							padding='same',
 							data_format='channels_last',
-							name='UNet-DownMaxpool{}'.format(level+1),)
+							name='UNet-DownMaxpool{}'.format(level+1),); layers[net.name] = net
 		for extraIndex in range(layerThickness-1):
 			net = convDown(	inputs=net,
 							filters=nFilters,
@@ -78,20 +78,20 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 							data_format='channels_last',
 							activation = activation,
 							kernel_initializer = init,
-							name = 'UNet-DownExtraConv{}-{}'.format(level+1,extraIndex+1))
+							name = 'UNet-DownExtraConv{}-{}'.format(level+1,extraIndex+1)); layers[net.name] = net
 			if not normalization is None:
 				pass
 			if not dropout is None:
-				net = tf.layers.dropout(net,rate=dropout,name='UNet-DownDropout{}'.format(level+1))
-		downLayers.append(net)	
+				net = tf.layers.dropout(net,rate=dropout,name='UNet-DownDropout{}'.format(level+1)); layers[net.name] = net
+		downLayers.append(net)
 
 	bottom = net
-	
+
 	logger.debug('U Up')
 	for index in range(0,len(filterPlan)):
 		nFilters = filterPlan[-1-index]
 		# Upsample
-		net = upsample(net,stride)
+		net = upsample(net,stride); layers[net.name] = net
 		# Concatenation with skip layers
 		if not skip is None:
 			skipChannels = downLayers[::-1][index+1]
@@ -102,8 +102,8 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 				localSkip = skip
 			if localSkip > 0:
 				skipChannels = skipChannels[...,0:localSkip]
-				net = tf.concat([net,skipChannels],axis=-1,name='UNet-UpConcat{}'.format(index+1))
-		
+				net = tf.concat([net,skipChannels],axis=-1,name='UNet-UpConcat{}'.format(index+1)); layers[net.name] = net
+
 		net = convDown(	inputs=net,
 						filters=nFilters,
 						kernel_size=filterSize,
@@ -112,11 +112,11 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 						data_format='channels_last',
 						activation = activation,
 						kernel_initializer = init,
-						name = 'UNet-UpConv{}'.format(index+1))
+						name = 'UNet-UpConv{}'.format(index+1)); layers[net.name] = net
 		if not normalization is None:
 			pass
 		if not dropout is None:
-			net = tf.layers.dropout(net,rate=dropout,name='UNet-UpDropout{}'.format(index+1))
+			net = tf.layers.dropout(net,rate=dropout,name='UNet-UpDropout{}'.format(index+1)); layers[net.name] = net
 		if not index == len(filterPlan)-1:
 			for extraIndex in range(layerThickness-1):
 				net = convDown(	inputs=net,
@@ -126,13 +126,13 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 								data_format='channels_last',
 								activation = activation,
 								kernel_initializer = init,
-								name = 'UNet-UpExtraConv{}-{}'.format(index+1,extraIndex+1))
+								name = 'UNet-UpExtraConv{}-{}'.format(index+1,extraIndex+1)); layers[net.name] = net
 				if normalization is not None:
 					pass
 				if not dropout is None:
-					net = tf.layers.dropout(net,rate=dropout,name='UNet-UpDropout{}'.format(index+1))
-			
-	return net
+					net = tf.layers.dropout(net,rate=dropout,name='UNet-UpDropout{}'.format(index+1)); layers[net.name] = net
+
+	return net,layers
 
 
 
@@ -170,10 +170,10 @@ class UNet2D(Net):
 	def create(self):
 		"""Override this method to customize your model"""
 		init = tf.contrib.layers.xavier_initializer()
-		
+
 		with tf.variable_scope(self.name):
 			self.x = tf.placeholder('float',shape=self.dimensions,name='input')
-		
+
 			self.yp = tf.placeholder('float',shape=[None,None,None,None],name='truth')
 			self.modelParameters['attentionWeight'] = tf.placeholder('float',shape=[None,None,None,None],name='attention')
 
@@ -192,25 +192,26 @@ class UNet2D(Net):
 
 			net = inLayer = self.x
 			if self.inputDropout:
-				net = self.addLayer(tf.layers.Dropout(rate=self.inputDropoutProbability,name='InputDropout')).apply(net,training=True)
+				net = self.addLayer(tf.layers.Dropout(rate=self.inputDropoutProbability,name='InputDropout')).apply(net,training=True);
 			if self.inputNoise:
-				net = tf.reshape(net + tf.random_normal(shape=tf.shape(net), mean=0.0, stddev=self.inputNoiseSigma, dtype='float'),tf.shape(net))
+				net = self.addLayer(tf.reshape(net + tf.random_normal(shape=tf.shape(net), mean=0.0, stddev=self.inputNoiseSigma, dtype='float'),tf.shape(net),name='InputNoise'));
 
-			net = uNet(net,filterPlan = self.filterPlan,filterSize = self.filterSize,maxpool=self.maxpool,layerThickness=self.layerThickness,normalization=self.normalization,dimensions=2,skip=self.skipChannels)
+			net,ulayers = uNet(net,filterPlan = self.filterPlan,filterSize = self.filterSize,maxpool=self.maxpool,layerThickness=self.layerThickness,normalization=self.normalization,dimensions=2,skip=self.skipChannels);
+			self.layers.update(ulayers)
 			for i in range(self.postUDepth):
-				net = tf.layers.conv2d(	inputs=net,
+				net = self.addLayer(tf.layers.conv2d(	inputs=net,
 										filters=self.filterPlan[0],
 										kernel_size=self.filterSize,
 										padding='same',
 										activation = self.nonlinearity,
 										kernel_initializer = init,
 										data_format='channels_last',
-										name = 'PostU{}'.format(i+1))
-			
+										name = 'PostU{}'.format(i+1)));
+
 				if self.normalization is not None:
 					pass
 				if self.internalDropout:
-					net = tf.layers.dropout(net,rate=self.internalDropoutProbability,name='PostUDropout{}'.format(i+1))
+					net = self.addLayer(tf.layers.dropout(net,rate=self.internalDropoutProbability,name='PostUDropout{}'.format(i+1)))
 			self.requiredInputs = [self.x]
 			if self.inputDropoutProbability is not None:
 				self.requiredInputs += [self.inputDropoutProbability]
@@ -224,7 +225,7 @@ class UNet2D(Net):
 
 	def preprocessInput(self,example,dimensionOrder=None):
 		dimensionOrder = example.get(dimensionOrder,None) if dimensionOrder is None else dimensionOrder
-		ret = dict(); ret.update(example); 
+		ret = dict(); ret.update(example);
 		ret['input'] = self.preprocessor.process(example['input'],dimensionOrder=dimensionOrder)
 		ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder)
 		return ret
@@ -289,26 +290,27 @@ class UNet3D(Net):
 
 			net = inLayer = self.x
 			if self.inputDropout:
-				net = self.addLayer(tf.layers.Dropout(rate=self.inputDropoutProbability,name='InputDropout')).apply(net,training=True)
+				net = self.addLayer(tf.layers.Dropout(rate=self.inputDropoutProbability,name='InputDropout')).apply(net,training=True);
 			if self.inputNoise:
 				#logger.info('Using input noise')
-				net = tf.reshape(net + tf.random_normal(shape=tf.shape(net), mean=0.0, stddev=self.inputNoiseSigma, dtype='float'),tf.shape(net))
+				net = self.addLayer(tf.reshape(net + tf.random_normal(shape=tf.shape(net), mean=0.0, stddev=self.inputNoiseSigma, dtype='float'),tf.shape(net),name='inputNoise'))
 
-			net = uNet(net,filterPlan = self.filterPlan,filterSize = self.filterSize,maxpool=self.maxpool,layerThickness=self.layerThickness,normalization=self.normalization,dimensions=3,skip=self.skipChannels)
+			net,ulayers = uNet(net,filterPlan = self.filterPlan,filterSize = self.filterSize,maxpool=self.maxpool,layerThickness=self.layerThickness,normalization=self.normalization,dimensions=3,skip=self.skipChannels)
+			self.layers.update(ulayers)
 			for i in range(self.postUDepth):
-				net = tf.layers.conv3d(	inputs=net,
+				net = self.addLayer(tf.layers.conv3d(	inputs=net,
 										filters=self.filterPlan[0],
 										kernel_size=self.filterSize,
 										padding='same',
 										activation = self.nonlinearity,
 										kernel_initializer = init,
 										data_format='channels_last',
-										name = 'PostU{}'.format(i+1))
+										name = 'PostU{}'.format(i+1)))
 
 				if self.normalization is not None:
 					pass
 				if self.internalDropout:
-					net = tf.layers.dropout(net,rate=self.internalDropoutProbability,name='PostUDropout{}'.format(i+1))
+					net = self.addLayer(tf.layers.dropout(net,rate=self.internalDropoutProbability,name='PostUDropout{}'.format(i+1)))
 			self.requiredInputs = [self.x]
 			if self.inputDropoutProbability is not None:
 				self.requiredInputs += [self.inputDropoutProbability]
@@ -322,13 +324,7 @@ class UNet3D(Net):
 
 	def preprocessInput(self,example,dimensionOrder=None):
 		dimensionOrder = example.get(dimensionOrder,None) if dimensionOrder is None else dimensionOrder
-		ret = dict(); ret.update(example); 
+		ret = dict(); ret.update(example);
 		ret['input'] = self.preprocessor.process(example['input'],dimensionOrder=dimensionOrder)
 		ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder)
 		return ret
-
-
-
-
-
-

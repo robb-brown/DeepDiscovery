@@ -6,12 +6,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 class CostFunction(DeepRoot.DeepRoot):
-	
+
 	def __new__(cls,*args,**kwargs):
 		self = super().__new__(cls)
 		self.__dict__['modelParameters'].update(dict(requiredInputs=[],net=None))
 		return self
-	
+
 	def create(self):
 		raise NotImplementedError
 
@@ -23,11 +23,11 @@ class CrossEntropyCost(CostFunction):
 		self.__dict__['modelParameters'].update(dict(y = None, yp = None))
 		self.__dict__['attention'] = None
 		return self
-	
+
 	def __init__(self,net,attention=False):
 		self.net = net
 		self.attention = attention
-	
+
 	def create(self):
 		cost = tf.keras.losses.categorical_crossentropy(self.net.yp,self.net.y)
 		if self.attention:
@@ -41,7 +41,7 @@ class CrossEntropyCost(CostFunction):
 
 
 class Trainer(DeepRoot.DeepRoot):
-	
+
 	def __new__(cls,*args,**kwargs):
 		self = super().__new__(cls)
 		self.__dict__['modelParameters'].update(dict(session = None,
@@ -50,7 +50,7 @@ class Trainer(DeepRoot.DeepRoot):
 													updates = None,
 													metrics=None))
 		return self
-	
+
 
 	def __init__(self,net,cost,examples,progressTracker=None,metrics=dict(cost=None),name=None,**trainingArguments):
 		self.__dict__['examples'] = examples
@@ -103,14 +103,13 @@ class Trainer(DeepRoot.DeepRoot):
 						accuracy = tf.reduce_mean(tf.cast(correctPrediction,'float'))
 						metrics[metric] = accuracy
 					elif metric == 'jaccard':
-						output = tf.cast(tf.argmax(net.y,axis=-1), dtype=tf.float32)
-						truth = tf.cast(tf.argmax(net.yp,axis=-1), dtype=tf.float32)
-						intersection = tf.reduce_sum(tf.reduce_sum(tf.multiply(output, truth), axis=-1),axis=-1)
-						union = tf.reduce_sum(tf.reduce_sum(tf.cast(tf.add(output, truth)>= 1, dtype=tf.float32), axis=-1),axis=-1) + 0.0000001
+						output = tf.cast(net.y[...,1]>0.5, dtype=tf.float32)
+						truth = tf.cast(net.yp[...,1]>0.5, dtype=tf.float32)
+						intersection = tf.reduce_sum(tf.multiply(output, truth))
+						union = tf.reduce_sum(tf.cast(tf.add(output, truth) >= 1,dtype=tf.float32))
 						jaccard = tf.reduce_mean(intersection / union)
 						metrics[metric] = jaccard
 			self.metrics = metrics
-		
 
 
 	def trainOne(self,examples=None,N=1,**args):
@@ -164,7 +163,7 @@ class Trainer(DeepRoot.DeepRoot):
 			# -------------------  Validation --------------------
 			example = self.examples.getValidationExamples(validationExamplesPerBatch)
 			result = self.validate(example,**validateArgs)
-			
+
 			if self.progressTracker is not None:
 				self.progressTracker.update(example=example,epoch=self.epoch,iteration=iteration,elapsed=self.previouslyElapsed+self.elapsed,totalIterations=self.epoch*examplesPerEpoch+iteration,kind='Validation',metrics=result)
 			self.epoch += 1; t2 = time.time(); elapsed = t2-self.startTime;
@@ -232,20 +231,20 @@ class Trainer(DeepRoot.DeepRoot):
 		self.__dict__['saveTime'] = time.time()
 
 		os.makedirs(os.path.join(path,trainerName),mode=0o777,exist_ok=True)
-		
+
 		# save the net and tracker and replace their references in the trainer with file names
 		self.netClass = self.net.__class__
 		self.trackerClass = self.progressTracker.__class__
 		self.netFile = os.path.basename(self.net.save(path))
 		self.trackerFile = os.path.basename(self.progressTracker.save(path))
-		
+
 		with open(os.path.join(path,trainerName,trainerName),'wb') as f:
 			dill.dump(self,f,protocol=dill.HIGHEST_PROTOCOL)
 
 		variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
 		self.modelParameters['tfSaver'] = tf.train.Saver(var_list=variables)
 		self.saveCheckpoint(write_meta_graph=True)
-		
+
 		return os.path.join(path,trainerName,trainerName)
 
 
@@ -282,4 +281,3 @@ class Trainer(DeepRoot.DeepRoot):
 			logger.exception('Failed to load net')
 			logger.warning('*** Could not locate saved network at {}. Trainer will be nonfunctional. ***'.format(fname))
 		return trainer
-
