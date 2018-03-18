@@ -2,6 +2,7 @@ import numpy
 import dill
 import time
 import os.path
+from collections import OrderedDict
 from .. import DeepRoot
 from ..utility import onlyMyArguments
 import sys
@@ -18,9 +19,9 @@ class Net(DeepRoot.DeepRoot):
 
 	def __new__(cls,*args,**kwargs):
 		self = super().__new__(cls)
-		self.__dict__['modelParameters'].update(dict(output = None, y = None, 
-									yp = None, x = None, layers = [],
-									net=None, update = None))
+		self.__dict__['modelParameters'].update(dict(output = None, y = None,
+									yp = None, x = None,
+									net=None, update = None, layers = OrderedDict()))
 		self.__dict__['lockedParameters'] = set()
 		self.__dict__['requiredInputs'] = []
 		self.__dict__['excludeFromPickle'] = ['modelParameters','requiredInputs']
@@ -37,19 +38,20 @@ class Net(DeepRoot.DeepRoot):
 	@property
 	def parameters(self):
 		raise NotImplementedError
-		
+
 	@property
 	def trainableParameters(self):
 		raise NotImplementedError
-		
+
 	@property
 	def model(self):
 		return self.net
-		
-	def addLayer(self,layer):
-		self.layers.append(layer)
+
+	def addLayer(self,layer,name=None):
+		name = layer.name if name is None else name
+		self.layers[name]=layer
 		return layer
-		
+
 	def create(self):
 		"""Override this method to customize your model"""
 		raise NotImplementedError
@@ -61,11 +63,11 @@ class Net(DeepRoot.DeepRoot):
 		return self.output
 
 
-	# Pickling support	
+	# Pickling support
 	def saveCheckpoint(self,label=None,write_meta_graph=False):
 		netName = self.name + ('-{}'.format(label) if not label is None else '')
 		self.tfSaver.save(tf.get_default_session(),os.path.join(self.fname,netName),write_meta_graph=write_meta_graph)
-		
+
 	def loadCheckpoint(self,label=None,latest=True):
 		netName = self.name + ('-{}'.format(label) if not label is None else '')
 		if label is None and latest:
@@ -85,10 +87,10 @@ class Net(DeepRoot.DeepRoot):
 		self.__dict__['fname'] = fname
 		self.__dict__['saveTime'] = time.time()
 		os.makedirs(fname,mode=0o777,exist_ok=True)
-		
+
 		with open(os.path.join(fname,netName),'wb') as f:
 			dill.dump(self,f,protocol=dill.HIGHEST_PROTOCOL)
-		
+
 		variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
 		self.modelParameters['tfSaver'] = tf.train.Saver(var_list=variables)
 		self.saveCheckpoint(write_meta_graph=True)
