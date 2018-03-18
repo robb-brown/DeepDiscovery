@@ -248,13 +248,6 @@ class ImagePreprocessor(object):
 			slices = [slice(*self.crop.get(dimension,[None])) for dimension in dimensionOrder]
 			x = x[slices]
 
-		# standardization
-		if not (standardize is None or standardize == False):
-			if hasattr(self.standardize,'standardize'):
-				x = self.standardize.standardize(x,dimensionOrder)
-			else:
-				x = self.standardize(x,dimensionOrder)
-
 		# padding
 		if not (self.pad is None or self.pad == False):
 			spatialAxes = [dimensionOrder.index(d) for d in (['z','y','x'] if self.mode == '2d' else ['z','y','x'])]
@@ -262,6 +255,13 @@ class ImagePreprocessor(object):
 				x = utility.padImage(x,depth=self.pad,mode=self.mode,spatialAxes=spatialAxes,oneHot=oneHot)
 			else:
 				x = utility.padImage(x,mode=self.mode,shape=self.pad,spatialAxes=spatialAxes,oneHot=oneHot)
+
+		# standardization
+		if not (standardize is None or standardize == False):
+			if hasattr(self.standardize,'standardize'):
+				x = self.standardize.standardize(x,dimensionOrder)
+			else:
+				x = self.standardize(x,dimensionOrder)
 
 		if (not requiredDimensionOrder is None) and (not dimensionOrder == requiredDimensionOrder):
 			# Check for missing dimensions
