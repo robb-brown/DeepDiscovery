@@ -25,12 +25,15 @@ setup(name='DeepDiscovery',
 
 
 # patch Tensorflow
-import tensorflow as tf
-import os,shutil
+try:
+	import tensorflow as tf
+	import os,shutil
 
-print('Patching TensorFlow convolutional layers...')
-path = os.path.dirname(tf.layers.__file__)
-src = os.path.join(os.path.dirname(__file__),'patches','convolutional.py')
-dst = os.path.join(path,'convolutional.py')
-shutil.copyfile(src, dst)
-print('Path complete')
+	print('Patching TensorFlow convolutional layers...')
+	path = os.path.dirname(tf.layers.__file__)
+	src = os.path.join(os.path.dirname(__file__),'patches','convolutional.py')
+	dst = os.path.join(path,'convolutional.py')
+	shutil.copyfile(src, dst)
+	print('Path complete')
+except:
+	pass

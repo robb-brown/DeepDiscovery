@@ -1,18 +1,13 @@
-# import Layers
-# import DeepNet
-# import VectorNet
-# import DeepSegmenter
-# import DeepSegmenter3D
-# import DeepData
-# import DeepTracker
-# import DeepTrainer
-
+import sys,traceback
 from . import utility
 from . import Data
-from . import Net
-from . import Trainer
+try:
+	from . import Net
+	from . import Trainer
+except:
+	print("Deep Discovery could not import Tensorflow components.")
+	traceback.print_exc()
 
-import sys
 
 # Check whether we're running interactively.
 try:
