@@ -351,7 +351,8 @@ class SpotStandardization(object):
 		else:
 			average = numpy.reshape(numpy.median(centre,axis=overAxes),standardizerShape)
 			std = numpy.reshape(numpy.percentile(centre, 75,axis=overAxes) - numpy.percentile(centre, 25,axis=overAxes),standardizerShape)			
-		x = (x - average) / std
+		#x = (x-average) / std
+		x = x / std
 		return x
 
 
@@ -370,7 +371,8 @@ class GlobalStandardization(SpotStandardization):
 		else:
 			average = numpy.reshape(numpy.median(x,axis=overAxes),standardizerShape)
 			std = numpy.reshape(numpy.percentile(x, 75,axis=overAxes) - numpy.percentile(x, 25,axis=overAxes),standardizerShape)			
-		x = (x - average) / std
+		#x = (x - average) / std
+		x = x / std
 		return x
 
 
