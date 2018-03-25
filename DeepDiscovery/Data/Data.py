@@ -71,9 +71,11 @@ class TrainingData(object):
 		return trainSet,testSet,validationSet,classes
 
 
-	def getExamples(self,dataset,N=1,balanceClasses=None):
+	def getExamples(self,dataset,N=1,balanceClasses=None,specificExamples = None):
 		balanceClasses = balanceClasses if balanceClasses is not None else self.balanceClasses
-		if balanceClasses:
+		if not specificExamples is None:
+			examples = self.examples[dataset[specificExamples]]
+		elif balanceClasses:
 			classN = len(self.classes.keys())
 			examples = list(numpy.array([numpy.random.choice(list(set(dataset).intersection(set(self.classes[c]))),N/classN,replace=False) for c in self.classes.keys()]).ravel())
 			if len(examples) < N: examples += list(numpy.random.choice(list(set(dataset) - set(examples)),N-len(examples),replace=False))
@@ -82,14 +84,14 @@ class TrainingData(object):
 			examples = self.examples[numpy.random.choice(list(dataset),N,replace=False)]
 		return self.preprocessExamples(copy.deepcopy(examples))
 	
-	def getTrainingExamples(self,N=1,balanceClasses=None):
-		return self.getExamples(self.trainSet,N=N,balanceClasses=balanceClasses)
+	def getTrainingExamples(self,N=1,balanceClasses=None,specificExamples = None):
+		return self.getExamples(self.trainSet,N=N,balanceClasses=balanceClasses,specificExamples=specificExamples)
 
-	def getValidationExamples(self,N=1,balanceClasses=None):
-		return self.getExamples(self.validationSet,N=N,balanceClasses=balanceClasses)
+	def getValidationExamples(self,N=1,balanceClasses=None,specificExamples = None):
+		return self.getExamples(self.validationSet,N=N,balanceClasses=balanceClasses,specificExamples=specificExamples)
 
-	def getTestingExamples(self,N=1,balanceClasses=None):
-		return self.getExamples(self.testSet,N=N,balanceClasses=balanceClasses)
+	def getTestingExamples(self,N=1,balanceClasses=None,specificExamples = None):
+		return self.getExamples(self.testSet,N=N,balanceClasses=balanceClasses,specificExamples=specificExamples)
 
 
 	def getAllTestingExamples(self):
