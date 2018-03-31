@@ -144,9 +144,9 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		if (truth>0.5).any():
 			midSlice = numpy.argmax(numpy.sum(truth,axis=(1,2)))
 		else:
-			midSlice = truth.shape[0] / 2
+			midSlice = truth.shape[0] // 2
 
-		print('{} {}'.format((truth>0.5).any(),midSlice))
+		logger.info('{} {}'.format((truth>0.5).any(),midSlice))
 
 		axis.imshow(inputImage[midSlice],cmap=pylab.cm.gray,origin='lower')
 		axis.imshow(output[midSlice],cmap=cmap,origin='lower',alpha=0.3,vmin=0,vmax=1.0)
@@ -157,7 +157,7 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		if (truth>0.5).any():
 			midSlice = numpy.argmax(numpy.sum(truth,axis=(0,2)))
 		else:
-			midSlice = truth.shape[1] / 2
+			midSlice = truth.shape[1] // 2
 		axis.imshow(inputImage[:,midSlice],cmap=pylab.cm.gray,origin='lower')
 		axis.imshow(output[:,midSlice],cmap=cmap,origin='lower',alpha=0.3,vmin=0,vmax=1.0)
 		axis.contour(truth[:,midSlice],colors=['b'],alpha=0.1,linewidths=1,origin='lower')
@@ -167,7 +167,7 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		if (truth>0.5).any():
 			midSlice = numpy.argmax(numpy.sum(truth,axis=(0,1)))
 		else:
-			midSlice = truth.shape[2] / 2
+			midSlice = truth.shape[2] // 2
 		axis.imshow(inputImage[:,:,midSlice],cmap=pylab.cm.gray,origin='lower')
 		axis.imshow(output[:,:,midSlice],cmap=cmap,origin='lower',alpha=0.3,vmin=0,vmax=1.0)
 		axis.contour(truth[:,:,midSlice],colors=['b'],alpha=0.1,linewidths=1,origin='lower')
