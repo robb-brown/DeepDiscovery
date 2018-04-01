@@ -103,8 +103,13 @@ class Trainer(DeepRoot.DeepRoot):
 						accuracy = tf.reduce_mean(tf.cast(correctPrediction,'float'))
 						metrics[metric] = accuracy
 					elif metric == 'jaccard':
-						output = tf.cast(net.y[...,1]>0.5, dtype=tf.float32)
-						truth = tf.cast(net.yp[...,1]>0.5, dtype=tf.float32)
+						if net.outputValues == 2:		# two class
+							output = tf.cast(tf.argmax(net.y,axis=-1), dtype=tf.float32)
+							truth = tf.cast(tf.argmax(net.yp,axis=-1), dtype=tf.float32)
+						else:
+							output = tf.cast(tf.one_hot(tf.argmax(net.y,axis=-1),depth=net.y.shape[-1])[...,1:], dtype=tf.float32)
+							truth = tf.cast(tf.one_hot(tf.argmax(net.yp,axis=-1),depth=net.y.shape[-1])[...,1:], dtype=tf.float32)							
+						
 						intersection = tf.reduce_sum(tf.multiply(output, truth))
 						union = tf.reduce_sum(tf.cast(tf.add(output, truth) >= 1,dtype=tf.float32))
 						jaccard = tf.reduce_mean(intersection / union)
