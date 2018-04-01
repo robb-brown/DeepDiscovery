@@ -146,8 +146,6 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		else:
 			midSlice = truth.shape[0] // 2
 
-		logger.info('{} {}'.format((truth>0.5).any(),midSlice))
-
 		axis.imshow(inputImage[midSlice],cmap=pylab.cm.gray,origin='lower')
 		axis.imshow(output[midSlice],cmap=cmap,origin='lower',alpha=0.3,vmin=0,vmax=1.0)
 		axis.contour(truth[midSlice],colors=['b'],alpha=0.1,linewidths=1,origin='lower')
