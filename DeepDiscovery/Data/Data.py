@@ -122,9 +122,11 @@ class TrainingData(object):
 
 class ImageTrainingData(TrainingData):
 
-	def __init__(self,examples,reserveForValidation=0.1,reserveForTest=0.1,truthComponents=None,inputChannels=None,gentleCoding=0.9,balanceClasses=False,attention=None,basepath=None):
+	def __init__(self,examples,reserveForValidation=0.1,reserveForTest=0.1,truth=None,truthChannels=None,truthComponents=None,inputChannels=None,gentleCoding=0.9,balanceClasses=False,attention=None,basepath=None):
 		super(ImageTrainingData,self).__init__(examples,reserveForValidation,reserveForTest)
 		self.basepath = basepath
+		self.truth = truth
+		self.truthChannels = truthChannels
 		self.truthComponents = truthComponents
 		self.inputChannels = inputChannels
 		self.gentleCoding = gentleCoding
@@ -132,6 +134,7 @@ class ImageTrainingData(TrainingData):
 
 
 	def preprocessExamples(self,examples):
+		self.truthChannels = None if not 'truthChannels' in self.__dict__ else self.truthChannels
 		basepath = self.__dict__.get('basepath',os.path.dirname(self.__dict__.get('fname','')))
 		basepath = os.path.dirname(self.__dict__.get('fname','')) if basepath is None else basepath
 		xs = []; ys = []; attentions = []
@@ -139,6 +142,8 @@ class ImageTrainingData(TrainingData):
 			t1 = time.time()
 			if not self.truthComponents is None and isinstance(self.truthComponents[0],(str,unicode)):
 				truthChannels = self.truthComponents
+			elif not self.truthChannels is None:
+				truthChannels = self.truthChannels
 			elif 'truthChannels' in example:
 				truthChannels = example['truthChannels']
 			else:
@@ -151,7 +156,7 @@ class ImageTrainingData(TrainingData):
 				y = numpy.concatenate([y0,y],axis=0)
 				y = y.transpose(list(range(1,len(y.shape)))+[0])
 			else:
-				truth = example.get(example['truth'],example['truth'])
+				truth = example.get(self.truth) if not self.truth is None else example.get(example['truth'],example['truth'])
 				y = nib.load(os.path.join(basepath,truth)).get_data()
 				y = numpy.expand_dims(y,-1)
 				# Convert y to one hot

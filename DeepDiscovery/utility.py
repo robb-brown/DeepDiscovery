@@ -102,8 +102,11 @@ def convertToOneHot(y,coding=[0,1],gentleCoding=True):
 	# if gentleCoding:
 	# 	y *= gentleCoding
 	# 	y += (y == 0) * (1-gentleCoding)
-
-	y = sum([numpy.where(y==code,c,0) for c,code in enumerate(coding)])
+	
+	if 0 in coding:
+		coding.remove(0)
+	y = numpy.sum([numpy.where(y==code,c+1,0) for c,code in enumerate(coding)],axis=0)
+	coding = [0]+coding
 	codingMatrix = numpy.eye(len(coding))
 	gentleCoding = 0.9 if gentleCoding is True else gentleCoding
 	if gentleCoding:
