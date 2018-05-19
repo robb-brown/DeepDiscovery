@@ -89,7 +89,8 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		validateMetric = numpy.array(self.performanceRecord['Validation'].get(metric,[])); validateElapsed = numpy.array(self.performanceRecord['Validation'].get('elapsed',[]))
 
 		# Plot the full record for the metric
-		self.figures[metric].clf(); axis = self.figures[metric].add_subplot(111); plotFunction = axis.semilogy if args.get('logPlots',self.logPlots) else axis.plot
+		self.figures[metric].clf(); axis = self.figures[metric].add_subplot(111); 
+		plotFunction = axis.semilogy if (args.get('logPlots',self.logPlots)) and (metric == 'cost') else axis.plot
 		if len(trainElapsed) > 0:
 			elapsedModifier,elapsedUnits = (1.,'s') if trainElapsed[-1] < 60*5 \
 				else (1./60,'m') if trainElapsed[-1] < 3600*2 \
@@ -104,9 +105,10 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		axis.legend(loc='best')
 
 		# Plot the most recent record of the metric
-		self.figures[metric+'Detail'].clf(); axis = self.figures[metric+'Detail'].add_subplot(111); plotFunction = axis.semilogy if args.get('logPlots',self.logPlots) else axis.plot
+		self.figures[metric+'Detail'].clf(); axis = self.figures[metric+'Detail'].add_subplot(111); 
+		plotFunction = axis.semilogy if args.get('logPlots',self.logPlots) else axis.plot
 		if len(trainElapsed) > 0:
-			start = 0 if len(trainElapsed) <= 100 else -100;
+			start = int(round(len(trainElapsed*0.9))) #if len(trainElapsed) <= 500 else -500;
 			plotFunction(trainElapsed[start:]*elapsedModifier,trainMetric[start:],color='b',label='Training',**self.plotArgs);
 		if len(validateElapsed) > 0:
 			start = numpy.argmin(numpy.abs(validateElapsed-trainElapsed[start]))
