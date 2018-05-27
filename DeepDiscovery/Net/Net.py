@@ -70,9 +70,10 @@ class Net(DeepRoot.DeepRoot):
 
 	def loadCheckpoint(self,label=None,latest=True):
 		netName = self.name + ('-{}'.format(label) if not label is None else '')
+		fname = None
 		if label is None and latest:
 			fname = tf.train.latest_checkpoint(self.fname)
-		else:
+		if fname is None:
 			netName = self.name + ('-{}'.format(label) if not label is None else '')
 			fname = os.path.join(self.fname,netName)
 		logger.info("Loading checkpoint {}".format(fname))

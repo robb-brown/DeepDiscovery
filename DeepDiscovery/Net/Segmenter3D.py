@@ -43,7 +43,8 @@ class Segmenter3D(UNet3D):
 		dimensionOrder = example.get('dimensionOrder',None) if dimensionOrder is None else dimensionOrder
 		ret = dict(); ret.update(example)
 		ret['input'] = self.preprocessor.process(example['input'],dimensionOrder=dimensionOrder)
-		ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder,oneHot=True)
+		if 'truth' in example:
+			ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder,oneHot=True)
 		if 'attention' in example:
 			ret['attention'] = self.preprocessor.process(example['attention'],standardize=False)
 		return ret

@@ -3,7 +3,7 @@ import numpy, random, math, time, dill, os, sys, copy
 import tensorflow as tf
 from collections import OrderedDict
 
-from ..utility import *
+from .. import utility
 
 
 
@@ -27,22 +27,28 @@ class Segmenter2D(UNet2D):
 			self.y = self.output = self.net = self.addLayer(tf.nn.softmax(self.logits,-1,name='softmax'))
 
 
-	def segment(self,image):
-		# output = lasagne.layers.get_output(self.net)
-		# return output.eval({self.x:image})
-		example = dict()
-		example['input'] = padImage(image,depth=len(self.filterPlan),mode='2d')
-		example['input'] = numpy.expand_dims(example['input'],1)
-		example = self.preprocessInput(example)
-		segmentation = self.forwardFunction(example['input'])
-		segmentation = padImage(segmentation,depth=1,mode='2d',shape=image.shape)
-		return segmentation.transpose(1,0,2,3)
+	def forwardPass(self,examples,**args):
+		feed,missing = utility.buildFeed(self.requiredInputs,examples,**args)
+		if len(missing) > 0:
+			logger.error('Missing input values: {}'.format(missing))
+		ret = tf.get_default_session().run(self.getOutput(),feed_dict=feed)
+		return ret
+
+	def segment(self,image,dimensionOrder=['z','y','x']):
+		originalShape = dict([(dimensionOrder[i],image.shape[i]) for i in range(len(image.shape))])
+		example = dict(input=image)
+		example = self.preprocessInput(example,dimensionOrder=dimensionOrder)
+		segmentation = self.forwardPass(example,inputDropout=0.,internalDropout=0.,inputNoise=0.)
+		requiredDimensionOrder = dimensionOrder + ['c'] if not 'c' in dimensionOrder else dimensionOrder
+		segmentation = self.preprocessor.restore(segmentation,originalShape=originalShape,dimensionOrder=requiredDimensionOrder,requiredDimensionOrder=requiredDimensionOrder)
+		return segmentation
 
 	def preprocessInput(self,example,dimensionOrder=None):
 		dimensionOrder = example.get('dimensionOrder',None) if dimensionOrder is None else dimensionOrder
 		ret = dict(); ret.update(example);
 		ret['input'] = self.preprocessor.process(example['input'],dimensionOrder=dimensionOrder)
-		ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder,oneHot=True)
+		if 'truth' in example:
+			ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder,oneHot=True)
 		if 'attention' in example:
 			ret['attention'] = self.preprocessor.process(example['attention'],standardize=False)
 		return ret

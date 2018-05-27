@@ -229,7 +229,8 @@ class UNet2D(Net):
 		dimensionOrder = example.get(dimensionOrder,None) if dimensionOrder is None else dimensionOrder
 		ret = dict(); ret.update(example);
 		ret['input'] = self.preprocessor.process(example['input'],dimensionOrder=dimensionOrder)
-		ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder)
+		if 'truth' in example:
+			ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder)
 		return ret
 
 
@@ -330,5 +331,6 @@ class UNet3D(Net):
 		dimensionOrder = example.get(dimensionOrder,None) if dimensionOrder is None else dimensionOrder
 		ret = dict(); ret.update(example);
 		ret['input'] = self.preprocessor.process(example['input'],dimensionOrder=dimensionOrder)
-		ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder)
+		if 'truth' in example:
+			ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder)
 		return ret

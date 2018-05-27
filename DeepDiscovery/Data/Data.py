@@ -247,6 +247,8 @@ class ImagePreprocessor(object):
 	def process(self,x,dimensionOrder=None,requiredDimensionOrder=None,standardize=None,oneHot=False):
 		requiredDimensionOrder = requiredDimensionOrder if not requiredDimensionOrder is None else self.requiredDimensionOrder
 		dimensionOrder = dimensionOrder if not dimensionOrder is None else self.dimensionOrder
+		requiredDimensionOrder = copy.deepcopy(requiredDimensionOrder)
+		dimensionOrder = copy.deepcopy(dimensionOrder)
 		standardize = False if oneHot else self.standardize if standardize is None else standardize
 		
 
@@ -257,11 +259,11 @@ class ImagePreprocessor(object):
 
 		# padding
 		if not (self.pad is None or self.pad == False):
-			spatialAxes = [dimensionOrder.index(d) for d in (['z','y','x'] if self.mode == '2d' else ['z','y','x'])]
+			spatialAxes = [dimensionOrder.index(d) for d in (['y','x'] if self.mode == '2d' else ['z','y','x']) if d in dimensionOrder]
 			if isinstance(self.pad,int):
-				x = utility.padImage(x,depth=self.pad,mode=self.mode,spatialAxes=spatialAxes,oneHot=oneHot)
+				x = utility.padImage(x,depth=self.pad,mode=None,spatialAxes=spatialAxes,oneHot=oneHot)
 			else:
-				x = utility.padImage(x,mode=self.mode,shape=self.pad,spatialAxes=spatialAxes,oneHot=oneHot)
+				x = utility.padImage(x,mode=None,shape=self.pad,spatialAxes=spatialAxes,oneHot=oneHot)
 
 		# standardization
 		if not (standardize is None or standardize == False):
@@ -283,6 +285,7 @@ class ImagePreprocessor(object):
 				tempDimensions = ['b'] + extraDimensions + [dim for dim in requiredDimensionOrder if not dim == 'b']
 				twiddler = [dimensionOrder.index(dim) for dim in tempDimensions]
 				x = x.transpose(twiddler)
+				dimensionOrder = tempDimensions
 				x.shape = [-1] + [dim for d,dim in enumerate(x.shape) if tempDimensions[d] in requiredDimensionOrder and not tempDimensions[d] == 'b']
 				dimensionOrder = [dim for dim in dimensionOrder if not dim in extraDimensions]
 			
@@ -295,15 +298,19 @@ class ImagePreprocessor(object):
 	def restore(self,x,originalShape=None,dimensionOrder=None,requiredDimensionOrder=None):
 		requiredDimensionOrder = requiredDimensionOrder if not requiredDimensionOrder is None else self.dimensionOrder
 		dimensionOrder = dimensionOrder if not dimensionOrder is None else self.requiredDimensionOrder if not self.requiredDimensionOrder is None else requiredDimensionOrder
-
+		requiredDimensionOrder = copy.deepcopy(requiredDimensionOrder)
+		dimensionOrder = copy.deepcopy(dimensionOrder)
+		
 		# padding
 		if not (self.pad is None or self.pad == False):
 			if self.crop:
-				oShape = list(originalShape)
-				for d in self.crop.keys():
-					oShape[dimensionOrder.index(d)] = self.crop[d][1]-self.crop[d][0]
+				oShape = [originalShape.get(d,x.shape[dimensionOrder.index(d)]) for d in dimensionOrder]
+				crop = self.crop
+				for d in crop.keys():
+					d = 'b' if self.mode == '2d' and d == 'z' and not d in dimensionOrder and 'b' in dimensionOrder else d
+					oShape[dimensionOrder.index(d)] = crop[d][1]-crop[d][0]
 			else:
-				oShape = originalShape
+				oShape = [originalShape.get(d,x.shape[dimensionOrder.index(d)]) for d in dimensionOrder]
 
 			spatialAxes = [dimensionOrder.index(d) for d in (['y','x'] if self.mode == '2d' else ['z','y','x'])]
 			if isinstance(self.pad,int):
@@ -314,12 +321,14 @@ class ImagePreprocessor(object):
 		# Cropping
 		if not (self.crop is None or self.crop == False):
 			slices = [slice(*self.crop.get(dimension,[None])) for dimension in dimensionOrder]
-			x2 = numpy.zeros(originalShape,x.dtype)
+			oShape = [originalShape.get(d,x.shape[dimensionOrder.index(d)]) for d in dimensionOrder]
+			x2 = numpy.zeros(oShape,x.dtype)
 			x2[slices] = x
 			x = x2
 
-		# robb - need to fix this so that it unrolls dimensions out of batch instead of inserting empty ones
 		if (not requiredDimensionOrder is None) and (not dimensionOrder == requiredDimensionOrder):
+			if self.mode == '2d' and not 'z' in dimensionOrder and 'b' in dimensionOrder:
+				dimensionOrder[dimensionOrder.index('b')] = 'z'
 			# Check for missing dimensions
 			for d,dim in enumerate(requiredDimensionOrder):
 				if not dim in dimensionOrder:

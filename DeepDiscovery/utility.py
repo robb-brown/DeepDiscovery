@@ -14,7 +14,7 @@ def createPath(path):
 		os.umask(0000)
 		os.makedirs(path,mode=0x777)
 
-def computePad(dims,depth,mode='2d',shape=None):
+def computePadOld(dims,depth,mode='2d',shape=None):
 	z1=z2=y1=y2=x1=x2=0
 	if not shape is None:
 		if mode == '2d':
@@ -35,34 +35,44 @@ def computePad(dims,depth,mode='2d',shape=None):
 	return z,y,x,z1,z2,y1,y2,x1,x2
 
 
+def computePad(dims,depth,shape=None):
+	dims1 = numpy.zeros(len(dims)); dims2 = numpy.zeros(len(dims))
+	if shape is None:
+		shape = [float(numpy.ceil(dims[i]/float(2**depth)) * (2**depth)) for i in range(len(dims))]
+	dims1 = [int(numpy.floor((shape[i] - dims[i])/2)) for i in range(len(dims))]
+	dims2 = [int(numpy.ceil((shape[i] - dims[i])/2)) for i in range(len(dims))]
+	return shape,dims1,dims2
+
+
 def padImage(img,depth,mode='2d',spatialAxes=[0,1,2],shape=None,oneHot=False):
 	"""Pads (or crops) an image so it is evenly divisible by 2**depth.  If mode == '2d' then z is not padded"""
+	if mode == '2d':			# compatability with legacy
+		spatialAxes = spatialAxes[-2:]
 	if not shape is None:
-		for axis in spatialAxes[-3:] if mode == '3d' else spatialAxes[-2:]:
+		for axis in spatialAxes:
 			if img.shape[axis] > shape[axis]:
 				start = int(numpy.trunc((img.shape[axis]-shape[axis]) / 2));
 				img = numpy.rollaxis(img,axis)[start:start+shape[axis]]
 				img = numpy.rollaxis(img,0,len(img.shape)+axis+1)
 
-	z,y,x,z1,z2,y1,y2,x1,x2 = computePad(numpy.array(img.shape)[[spatialAxes]],depth,mode,shape)
+	newShape,dims1,dims2 = computePad(numpy.array(img.shape)[[spatialAxes]],depth,shape)
 	dims = [(0,0) for i in img.shape]
-	dims[spatialAxes[0]] = (z1,z2); dims[spatialAxes[1]] = (y1,y2); dims[spatialAxes[2]] = (x1,x2)
+	for a,ax in enumerate(spatialAxes):
+		dims[ax] = (dims1[a],dims2[a])
 	if oneHot:
 		ret = numpy.pad(img,dims,'edge')
 	else:
 		ret = numpy.pad(img,dims,'constant')
 	return ret
-	
 
 
 def depadImage(img,originalShape,spatialAxes=[0,1,2]):
-	z1=z2=y1=y2=x1=x2=0
-	z,y,x = numpy.array(img.shape)[spatialAxes]
-	z1 = int(numpy.floor((z - originalShape[spatialAxes[0]])/2)); z2 = int(numpy.ceil((z - originalShape[spatialAxes[0]])/2))
-	y1 = int(numpy.floor((y - originalShape[spatialAxes[1]])/2)); y2 = int(numpy.ceil((y - originalShape[spatialAxes[1]])/2))
-	x1 = int(numpy.floor((x - originalShape[spatialAxes[2]])/2)); x2 = int(numpy.ceil((x - originalShape[spatialAxes[2]])/2))
+	dims = numpy.array(img.shape)
 	slices = list(numpy.repeat(slice(None),len(img.shape)))
-	slices[spatialAxes[0]] = slice(z1,z-z2); slices[spatialAxes[1]] = slice(y1,y-y2); slices[spatialAxes[2]] = slice(x1,x-x2);  
+	for dim in spatialAxes:
+		d = (dims[dim] - originalShape[dim])/2
+		d1 = int(numpy.floor(d)); d2 = int(numpy.ceil(d))
+		slices[dim] = slice(d1,dims[dim]-d2)		
 	ret = img[slices]
 	return ret
 	

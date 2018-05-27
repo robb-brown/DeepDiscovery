@@ -1,6 +1,11 @@
+__pycache__/*
 *.pyc
 *.png
 *.pdf
+*.nii
+*.mnc
+*.mnc.gz
+*.nii.gz
 ddenv
 ddenv/*
 *env
