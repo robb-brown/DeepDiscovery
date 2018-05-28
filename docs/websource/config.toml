@@ -1,0 +1,30 @@
+theme = "robb"
+baseURL = "https://deepdiscovery.org"
+languageCode = "en-us"
+title = "Deep Discovery"
+copyright = "Robert A. Brown"
+
+MetaDataFormat = "yaml"
+DefaultContentLanguage = "en"
+SectionPagesMenu = "main"
+Paginate = 3 # this is set low for demonstrating with dummy content. Set to a higher number
+googleAnalytics = ""
+enableRobotsTXT = true
+
+[sitemap]
+  changefreq = "monthly"
+  priority = 0.5
+  filename = "sitemap.xml"
+
+[params]
+	background_color_class = 'bg-navy'
+	#featured_image = "/images/gohugo-default-sample-hero-image.jpg"
+  favicon = ""
+  description = ""
+  facebook = ""
+  twitter = ""
+  instagram = ""
+  youtube = ""
+  github = ""
+  linkedin = ""
+  recent_posts_number = 2
