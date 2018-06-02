@@ -1,13 +1,14 @@
 theme = "robb"
-baseURL = "https://deepdiscovery.org"
+baseURL = "https://deepdiscovery.org/"
 languageCode = "en-us"
 title = "Deep Discovery"
 copyright = "Robert A. Brown"
 
 MetaDataFormat = "yaml"
 DefaultContentLanguage = "en"
+publishDir = "../docs/"
 SectionPagesMenu = "main"
-Paginate = 3 # this is set low for demonstrating with dummy content. Set to a higher number
+Paginate = 10 # this is set low for demonstrating with dummy content. Set to a higher number
 googleAnalytics = ""
 enableRobotsTXT = true
 
