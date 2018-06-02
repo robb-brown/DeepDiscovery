@@ -3,6 +3,20 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
+    <loc>https://deepdiscovery.org/tutorials/brainsegmentation/</loc>
+    <lastmod>2018-06-02T11:15:29-04:00</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://deepdiscovery.org/tutorials/installation/</loc>
+    <lastmod>2018-05-27T15:59:22-04:00</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
     <loc>https://deepdiscovery.org/categories/</loc>
     <changefreq>monthly</changefreq>
     <priority>0</priority>
@@ -10,12 +24,20 @@
   
   <url>
     <loc>https://deepdiscovery.org/</loc>
+    <lastmod>2018-06-02T11:15:29-04:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   
   <url>
     <loc>https://deepdiscovery.org/tags/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://deepdiscovery.org/tutorials/</loc>
+    <lastmod>2018-06-02T11:15:29-04:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0</priority>
   </url>

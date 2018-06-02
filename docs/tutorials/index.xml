@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Deep Discovery</title>
-    <link>https://deepdiscovery.org/</link>
-    <description>Recent content on Deep Discovery</description>
+    <title>Tutorials on Deep Discovery</title>
+    <link>https://deepdiscovery.org/tutorials/</link>
+    <description>Recent content in Tutorials on Deep Discovery</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>Robert A. Brown</copyright>
     <lastBuildDate>Sat, 02 Jun 2018 11:15:29 -0400</lastBuildDate>
     
-	<atom:link href="https://deepdiscovery.org/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://deepdiscovery.org/tutorials/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>

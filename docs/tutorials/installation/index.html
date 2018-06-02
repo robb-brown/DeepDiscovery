@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Deep Discovery  | Installation</title>
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="generator" content="Hugo 0.41" />
+    
+    
+      <META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW">
+    
+
+    
+    
+      <link href="/dist/css/app.ab4b67a3ea25990fa8279f3b7ef08b61.css" rel="stylesheet">
+    
+
+    
+
+    
+      
+    
+
+    
+
+    <meta property="og:title" content="Installation" />
+<meta property="og:description" content="If you would like to use anaconda, miniconda, or some other packaging system, or you have difficulty with these instructions, you can follow the TensorFlow installation instructions for your system, then skip to step 4. Currently Deep Discovery works with TensorFlow version 1.4 and Python 3.X.
+Installation Steps:
+ Install Python
+If your system doesn&rsquo;t have a pre-installed Python 3, or if you&rsquo;d rather not use the system Python, download Python 3 from python." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://deepdiscovery.org/tutorials/installation/" />
+
+
+
+<meta property="article:published_time" content="2018-05-27T15:59:22-04:00"/>
+
+<meta property="article:modified_time" content="2018-05-27T15:59:22-04:00"/>
+
+
+
+
+
+
+
+
+
+
+
+<meta itemprop="name" content="Installation">
+<meta itemprop="description" content="If you would like to use anaconda, miniconda, or some other packaging system, or you have difficulty with these instructions, you can follow the TensorFlow installation instructions for your system, then skip to step 4. Currently Deep Discovery works with TensorFlow version 1.4 and Python 3.X.
+Installation Steps:
+ Install Python
+If your system doesn&rsquo;t have a pre-installed Python 3, or if you&rsquo;d rather not use the system Python, download Python 3 from python.">
+
+
+<meta itemprop="datePublished" content="2018-05-27T15:59:22-04:00" />
+<meta itemprop="dateModified" content="2018-05-27T15:59:22-04:00" />
+<meta itemprop="wordCount" content="420">
+
+
+
+<meta itemprop="keywords" content="" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Installation"/>
+<meta name="twitter:description" content="If you would like to use anaconda, miniconda, or some other packaging system, or you have difficulty with these instructions, you can follow the TensorFlow installation instructions for your system, then skip to step 4. Currently Deep Discovery works with TensorFlow version 1.4 and Python 3.X.
+Installation Steps:
+ Install Python
+If your system doesn&rsquo;t have a pre-installed Python 3, or if you&rsquo;d rather not use the system Python, download Python 3 from python."/>
+
+  </head>
+
+  <body class="ma0 avenir bg-near-white">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-navy">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l justify-between items-center center">
+    <a href="https://deepdiscovery.org" class="f3 fw2 hover-white no-underline white-90 dib">
+      Deep Discovery
+    </a>
+    <div class="flex-l items-center">
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white no-underline white-90" href="/tutorials/" title="Tutorials page">
+              Tutorials
+            </a>
+          </li>
+          
+        </ul>
+      
+      
+
+
+
+
+
+
+
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  <article class="flex-l flex-wrap justify-between mw8 center">
+
+    <header class="mt4 w-100 mh4">
+      <p class="f6 b helvetica tracked">
+          
+        TUTORIALS
+      </p>
+      <h1 class="f1 helvetica mb1">Installation</h1>
+      
+      <time class="f6 mv4 dib tracked" datetime="2018-05-27T15:59:22-04:00">May 27, 2018</time>
+    </header>
+
+    <main class="helvetica nested-copy-line-height lh-copy serif f4 nested-links nested-img mid-gray pr4-l w-two-thirds-l mh4">
+		
+			<div class="i mh4 tc">
+  <p>This page is a beta.  If you find errors, have problems, or have comments, please report them <a href="https://github.com/robb-brown/DeepDiscovery/issues/new">here</a>.
+</div>
+
+		<p><em>If you would like to use anaconda, miniconda, or some other packaging system, or you have difficulty with these instructions, you can follow the <a href="https://www.tensorflow.org/install/">TensorFlow</a> installation instructions for your system, then skip to step 4. Currently Deep Discovery works with TensorFlow version 1.4 and Python 3.X.</em></p>
+
+<p>Installation Steps:</p>
+
+<ol>
+<li><p>Install Python</p>
+
+<p>If your system doesn&rsquo;t have a pre-installed Python 3, or if you&rsquo;d rather not use the system Python, download Python 3 from <a href="https://www.python.org/downloads/">python.org</a> and follow the installation instructions.</p>
+
+<p><em>Note: it&rsquo;s important to get Python 3.X, which should be highlighted at the top of the page as the latest version.</em></p></li>
+
+<li><p>Set up a virtual environment</p>
+
+<p>This step is optional, but recommended.  A virtual environment holds a copy of the Python interpreter and a self-contained library of installed packages. This will isolate your Deep Discovery environment from any other Python environments you may have.</p>
+
+<ol>
+<li><p>Open a terminal.  On a Mac open Spotlight Search and type terminal, then click on Terminal.app.</p></li>
+
+<li><p>Change directory to where you would like your virtual environment stored. It&rsquo;s important to put this somewhere convenient, e.g.:
+<p align="center"><code>cd ~/projects/</code></p></p></li>
+
+<li><p>Create the virtual environment:<br />
+<p align="center"><code>python3 -m venv ddenv</code> </p>
+Where you can replace <code>ddenv</code> with whatever name you like. Python will create a directory called <code>ddenv</code></p></li>
+
+<li><p>Source your virtual environment:
+<p align="center"><code>source ddenv/bin/activate</code> </p>
+You should now see an indicator such as <code>(ddenv)</code> in your command prompt.  This indicates that you&rsquo;re using your virtual environment, and any Python related commands will apply to that environment.</p></li>
+</ol></li>
+
+<li><p>Install TensorFlow</p>
+
+<p>Deep Discovery can&rsquo;t reliably install TensorFlow on all systems. You can follow the install instructions for TensorFlow, remembering that you already have a functioning virtual environment, or try:<br />
+<p align="center"><code>pip install tensorflow==1.4.0</code></p>
+If this fails, on a Mac try:
+<p align="center"><code>pip install https://storage.googleapis.com/tensorflow/mac/cpu/tensorflow-1.4.0-py3-none-any.whl</code></p>
+If you have a compatible NVIDIA GPU you might also want to install TensorFlow support for it:
+<p align="center"><code>pip install tensorflow-gpu==1.4.0</code></p></p></li>
+
+<li><p>Install Deep Discovery</p>
+
+<p>We&rsquo;ll use the Python program <code>pip</code> to install the Deep Discovery package and all its dependencies.  Making sure you&rsquo;re in your virtual environment, type:<br />
+    <p align="center"><code>pip install git+git://github.com/robb-brown/DeepDiscovery.git</code></p>
+Pip will report that it is collecting Deep Discovery from git, and will begin installing packages, such as matplotlib, numpy, and pandas. Depending on the speed of your computer and Internet connection, this may take some time.</p></li>
+
+<li><p>Test your installation</p>
+
+<ol>
+<li><p>Start Python by typing<br />
+<p align="center"><code>python</code></p>
+at the command prompt. You should see a Python prompt that looks like <code>&gt;&gt;&gt;</code>.</p></li>
+
+<li><p>Import Deep Discovery.  For convenience, we usually give it the short name &lsquo;dd&rsquo;:
+<p align="center"><code>import DeepDiscovery as dd</code></p>
+If you didn&rsquo;t get any errors, your installation is complete!</p></li>
+</ol></li>
+</ol>
+<ul class="pa0">
+  
+</ul>
+<div class="mt6">
+        
+      </div>
+    </main>
+
+    <aside class="w-30-l mt6-l">
+
+
+
+
+</aside>
+
+  </article>
+
+    </main>
+    <footer class="bottom-0 w-100 pa3 bg-navy" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white no-underline white-70 dn dib-ns pv2 ph3" href="https://deepdiscovery.org" >
+    &copy; 2018 Robert A. Brown
+  </a>
+  
+
+
+
+
+
+
+
+
+  </div>
+</footer>
+
+    
+
+  <script src="/dist/js/app.3fc0f988d21662902933.js"></script>
+
+
+  </body>
+</html>

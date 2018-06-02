@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Deep Discovery  | Brain Segmentation with Deep Discovery</title>
+    <meta name="HandheldFriendly" content="True">
+    <meta name="MobileOptimized" content="320">
+
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="generator" content="Hugo 0.41" />
+    
+    
+      <META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW">
+    
+
+    
+    
+      <link href="/dist/css/app.ab4b67a3ea25990fa8279f3b7ef08b61.css" rel="stylesheet">
+    
+
+    
+
+    
+      
+    
+
+    
+
+    <meta property="og:title" content="Brain Segmentation with Deep Discovery" />
+<meta property="og:description" content="This tutorial shows how to load a trained model, use it to segment an image, and save the resulting brain probability map.
+Example data and a trained 2d brain segmentation model can be found here. For this tutorial, download both and put them in a working directory. The directory also contains segment.py if you&rsquo;d rather not type out the tutorial code.
+Create a new python program in your working directory and open it in your favourite code editor; for this tutorial we&rsquo;ll assume you called it segment." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://deepdiscovery.org/tutorials/brainsegmentation/" />
+
+
+
+<meta property="article:published_time" content="2018-06-02T11:15:29-04:00"/>
+
+<meta property="article:modified_time" content="2018-06-02T11:15:29-04:00"/>
+
+
+
+
+
+
+
+
+
+
+
+<meta itemprop="name" content="Brain Segmentation with Deep Discovery">
+<meta itemprop="description" content="This tutorial shows how to load a trained model, use it to segment an image, and save the resulting brain probability map.
+Example data and a trained 2d brain segmentation model can be found here. For this tutorial, download both and put them in a working directory. The directory also contains segment.py if you&rsquo;d rather not type out the tutorial code.
+Create a new python program in your working directory and open it in your favourite code editor; for this tutorial we&rsquo;ll assume you called it segment.">
+
+
+<meta itemprop="datePublished" content="2018-06-02T11:15:29-04:00" />
+<meta itemprop="dateModified" content="2018-06-02T11:15:29-04:00" />
+<meta itemprop="wordCount" content="629">
+
+
+
+<meta itemprop="keywords" content="" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Brain Segmentation with Deep Discovery"/>
+<meta name="twitter:description" content="This tutorial shows how to load a trained model, use it to segment an image, and save the resulting brain probability map.
+Example data and a trained 2d brain segmentation model can be found here. For this tutorial, download both and put them in a working directory. The directory also contains segment.py if you&rsquo;d rather not type out the tutorial code.
+Create a new python program in your working directory and open it in your favourite code editor; for this tutorial we&rsquo;ll assume you called it segment."/>
+
+  </head>
+
+  <body class="ma0 avenir bg-near-white">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-navy">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l justify-between items-center center">
+    <a href="https://deepdiscovery.org" class="f3 fw2 hover-white no-underline white-90 dib">
+      Deep Discovery
+    </a>
+    <div class="flex-l items-center">
+      
+        <ul class="pl0 mr3">
+          
+          <li class="list f5 f4-ns fw4 dib pr3">
+            <a class="hover-white no-underline white-90" href="/tutorials/" title="Tutorials page">
+              Tutorials
+            </a>
+          </li>
+          
+        </ul>
+      
+      
+
+
+
+
+
+
+
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  <article class="flex-l flex-wrap justify-between mw8 center">
+
+    <header class="mt4 w-100 mh4">
+      <p class="f6 b helvetica tracked">
+          
+        TUTORIALS
+      </p>
+      <h1 class="f1 helvetica mb1">Brain Segmentation with Deep Discovery</h1>
+      
+      <time class="f6 mv4 dib tracked" datetime="2018-06-02T11:15:29-04:00">June 2, 2018</time>
+    </header>
+
+    <main class="helvetica nested-copy-line-height lh-copy serif f4 nested-links nested-img mid-gray pr4-l w-two-thirds-l mh4">
+		
+			<div class="i mh4 tc">
+  <p>This page is a beta.  If you find errors, have problems, or have comments, please report them <a href="https://github.com/robb-brown/DeepDiscovery/issues/new">here</a>.
+</div>
+
+		<p>This tutorial shows how to load a trained model, use it to segment an image, and save the resulting brain probability map.</p>
+
+<p>Example data and a trained 2d brain segmentation model can be found <a href="https://github.com/robb-brown/DeepDiscovery/tree/master/tutorials/brainSegmentation">here</a>. For this tutorial, download both and put them in a working directory. The directory also contains <code>segment.py</code> if you&rsquo;d rather not type out the tutorial code.</p>
+
+<p>Create a new python program in your working directory and open it in your favourite code editor; for this tutorial we&rsquo;ll assume you called it <code>segment.py</code>. You can type (or copy and paste) code into this file as we go.  You may also wish to open a terminal, start Python, and copy and paste code into the interactive interpreter as well.</p>
+
+<p>First we need our imports:</p>
+
+<pre><code class="language-python">import DeepDiscovery as dd
+import tensorflow as tf
+import nibabel as nib
+import pylab
+</code></pre>
+
+<p>We import Deep Discovery with the name <code>dd</code> for convenience, tensorflow (named <code>tf</code>) to create a session and nibable (as <code>nib</code>) for reading images. You can also import <code>pylab</code> for displaying the result.</p>
+
+<p>In order to actually run a TensorFlow model, we need to have a session.  We might as well create it now:</p>
+
+<pre><code class="language-python">session = tf.InteractiveSession()
+</code></pre>
+
+<p>Now, to give our program some generalizability, let&rsquo;s define a couple of variables holding the paths to our image and model.  Later we&rsquo;ll convert these into command line arguments:</p>
+
+<pre><code class="language-python">modelPath = 'BrainExtraction2d.net'
+dataPath = 'tal_sub-A00028185_ses-NFB3_t1w.mnc.004.mnc'
+</code></pre>
+
+<p>Okay, that takes care of the preliminaries.  Now it&rsquo;s time to actually load our trained model and an input image:</p>
+
+<pre><code class="language-python">net = dd.Net.Net.load(modelPath)
+image = nib.load(dataPath)
+</code></pre>
+
+<p>Note that Nibabel can read and write both MINC and NIFTI images, but it can only write NIFTI.  If you&rsquo;d like MINC output, you will need some way to save a numpy array as a MINC file.</p>
+
+<p>Time to segment.  Ready?</p>
+
+<pre><code class="language-python">brainProb = net.segment(image.get_data())[...,1]
+</code></pre>
+
+<p>If you&rsquo;re pasting code into an interactive interpreter, you&rsquo;ll notice that this command takes a while (10 seconds or so) to run.  Tensorflow is running the model.  The object <code>net</code> is a <code>DeepDiscovery.Net.Segmenter2D</code> object, which implements a U-Net type deep learning network. The <code>segment</code> method, by default, expects an image with dimensions <code>[z,y,x]</code>, which is conveniently what nibabel provides.  Since we&rsquo;re doing 2D segmentation, <code>Segmenter2D.segment</code> reshapes the input to have dimensions <code>[batch,y,x,channel]</code> where each z slice gets converted into a &ldquo;batch&rdquo; and a dummy channel dimension is added on the end.  If we were doing multi-contrast segmentation, we might pack multiple images into different channels.</p>
+
+<p>Finally, the segmenter maps the TensorFlow output back into a <code>[z,y,x,channels]</code> array. The channels store the probability of each class. Since we only have two classes (background a brain), we only need the second channel; we select this using the numpy slice <code>[...,1]</code>.</p>
+
+<p>Next, let&rsquo;s save our brain probability map.  We can create a new NIFTI image and save it using Nibabel:</p>
+
+<pre><code class="language-python">output = nib.Nifti2Image(brainProb,image.affine,header=image.header)
+nib.save(output,'brainProb.nii')
+</code></pre>
+
+<p>If you wanted to save a binary brain mask instead, you would threshold brainProb at 0.5 before saving.</p>
+
+<p>Finally, let&rsquo;s see how our segmentation did.  A nice way to do that is to display our original image with the 50% probability contour line displayed on top:</p>
+
+<pre><code class="language-python">slc = [slice(None),slice(None),slice(None)]; slc[0] = 100
+pylab.ion(); pylab.figure('Brain Probability'); pylab.clf()
+pylab.imshow(image.get_data()[slc],cmap=pylab.cm.gray,origin='lower')
+pylab.contour(brainProb[slc],[0.5],colors='g')
+</code></pre>
+
+<p>By changing the <code>slc[0] = 100</code> you can control the orientation and location of the slice.  <code>slc[0]</code> gives an axial slice, with <code>slc[1]</code> for coronal and <code>slc[2]</code> for sagittal. Slice 100 is approximately in the centre.</p>
+
+<p>If you haven&rsquo;t been following in the interactive interpreter, save your file and run it now, using:</p>
+
+<pre><code class="language-python">python -i segment.py
+</code></pre>
+
+<p>in a terminal (don&rsquo;t forget to source your virtual environment). You should see an axial slice of your test image, with a green contour line around the brain. If you select another slice, you can see sagittal and coronal views too:</p>
+
+<div class=".content-center .cf:after">
+<img src="/tutorials/images/brainSegmentationTutorialAxial.jpeg", alt="Axial Brain Slice" style="width:150px; float:left"/>
+<img src="/tutorials/images/brainSegmentationTutorialCoronal.jpeg", alt="Coronal Brain Slice" style="width:201px; float:left"/>
+<img src="/tutorials/images/brainSegmentationTutorialSagittal.jpeg", alt="Sagittal Brain Slice" style="width:214px; float:left"/>
+</div>
+<ul class="pa0">
+  
+</ul>
+<div class="mt6">
+        
+      </div>
+    </main>
+
+    <aside class="w-30-l mt6-l">
+
+
+
+
+</aside>
+
+  </article>
+
+    </main>
+    <footer class="bottom-0 w-100 pa3 bg-navy" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white no-underline white-70 dn dib-ns pv2 ph3" href="https://deepdiscovery.org" >
+    &copy; 2018 Robert A. Brown
+  </a>
+  
+
+
+
+
+
+
+
+
+  </div>
+</footer>
+
+    
+
+  <script src="/dist/js/app.3fc0f988d21662902933.js"></script>
+
+
+  </body>
+</html>
