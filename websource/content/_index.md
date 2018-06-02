@@ -11,7 +11,7 @@ Deep Discovery includes:
 - A Python API with features for managing data, training models, and easy to override model classes that you can customize
 - A Qt GUI is planned
 
-View the [tutorials](/tutorials/) to learn how to [install](/tutorials/installation/) and use Deep Discovery to [perform medical image processing tasks](/tutorials/brainsegmentation/), train your own models, or develop new models.
+View the [tutorials](/tutorials/index.html) to learn how to [install](/tutorials/installation/index.html) and use Deep Discovery to [perform medical image processing tasks](/tutorials/brainsegmentation/index.html), train your own models, or develop new models.
 
 [Download](http://github.com/robb-brown/DeepDiscovery) from GitHub.
 
