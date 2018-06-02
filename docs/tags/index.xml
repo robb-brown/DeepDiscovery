@@ -2,13 +2,13 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Tags on Deep Discovery</title>
-    <link>https://deepdiscovery.org/tags/</link>
+    <link>http://www.deepdiscovery.org/tags/</link>
     <description>Recent content in Tags on Deep Discovery</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>Robert A. Brown</copyright>
     
-	<atom:link href="https://deepdiscovery.org/tags/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="http://www.deepdiscovery.org/tags/index.xml" rel="self" type="application/rss+xml" />
     
     
   </channel>

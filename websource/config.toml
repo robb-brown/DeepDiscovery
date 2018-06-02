@@ -1,5 +1,5 @@
 theme = "robb"
-baseURL = "https://deepdiscovery.org/"
+baseURL = "http://www.deepdiscovery.org/"
 languageCode = "en-us"
 title = "Deep Discovery"
 copyright = "Robert A. Brown"

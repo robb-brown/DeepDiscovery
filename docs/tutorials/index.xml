@@ -2,22 +2,22 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Tutorials on Deep Discovery</title>
-    <link>https://deepdiscovery.org/tutorials/</link>
+    <link>http://www.deepdiscovery.org/tutorials/</link>
     <description>Recent content in Tutorials on Deep Discovery</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>Robert A. Brown</copyright>
     <lastBuildDate>Sat, 02 Jun 2018 11:15:29 -0400</lastBuildDate>
     
-	<atom:link href="https://deepdiscovery.org/tutorials/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="http://www.deepdiscovery.org/tutorials/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Brain Segmentation with Deep Discovery</title>
-      <link>https://deepdiscovery.org/tutorials/brainsegmentation/</link>
+      <link>http://www.deepdiscovery.org/tutorials/brainsegmentation/</link>
       <pubDate>Sat, 02 Jun 2018 11:15:29 -0400</pubDate>
       
-      <guid>https://deepdiscovery.org/tutorials/brainsegmentation/</guid>
+      <guid>http://www.deepdiscovery.org/tutorials/brainsegmentation/</guid>
       <description>This tutorial shows how to load a trained model, use it to segment an image, and save the resulting brain probability map.
 Example data and a trained 2d brain segmentation model can be found here. For this tutorial, download both and put them in a working directory. The directory also contains segment.py if you&amp;rsquo;d rather not type out the tutorial code.
 Create a new python program in your working directory and open it in your favourite code editor; for this tutorial we&amp;rsquo;ll assume you called it segment.</description>
@@ -25,10 +25,10 @@ Create a new python program in your working directory and open it in your favour
     
     <item>
       <title>Installation</title>
-      <link>https://deepdiscovery.org/tutorials/installation/</link>
+      <link>http://www.deepdiscovery.org/tutorials/installation/</link>
       <pubDate>Sun, 27 May 2018 15:59:22 -0400</pubDate>
       
-      <guid>https://deepdiscovery.org/tutorials/installation/</guid>
+      <guid>http://www.deepdiscovery.org/tutorials/installation/</guid>
       <description>If you would like to use anaconda, miniconda, or some other packaging system, or you have difficulty with these instructions, you can follow the TensorFlow installation instructions for your system, then skip to step 4. Currently Deep Discovery works with TensorFlow version 1.4 and Python 3.X.
 Installation Steps:
  Install Python
