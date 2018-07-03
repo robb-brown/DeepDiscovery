@@ -115,7 +115,7 @@ class TrainingData(object):
 		with open(fname,'rb') as f:
 			data = dill.load(f)
 			data.fname = fname
-			return data
+		return data
 
 
 
@@ -133,7 +133,7 @@ class ImageTrainingData(TrainingData):
 		self.attention = attention
 
 
-	def preprocessExamples(self,examples):
+	def preprocessExamples(self,examples,inputChannels=None):
 		self.truthChannels = None if not 'truthChannels' in self.__dict__ else self.truthChannels
 		basepath = self.__dict__.get('basepath',os.path.dirname(self.__dict__.get('fname','')))
 		basepath = os.path.dirname(self.__dict__.get('fname','')) if basepath is None else basepath
@@ -155,7 +155,7 @@ class ImageTrainingData(TrainingData):
 				y0 = numpy.expand_dims(1.0-numpy.sum(y,axis=0),axis=0)
 				y = numpy.concatenate([y0,y],axis=0)
 				y = y.transpose(list(range(1,len(y.shape)))+[0])
-			else:
+			elif not self.truth is None or 'truth' in example:
 				truth = example.get(self.truth) if not self.truth is None else example.get(example['truth'],example['truth'])
 				y = nib.load(os.path.join(basepath,truth)).get_data()
 				y = numpy.expand_dims(y,-1)
@@ -163,8 +163,10 @@ class ImageTrainingData(TrainingData):
 				if not self.truthComponents is None:
 					y.shape = y.shape[0:-1]
 					y = utility.convertToOneHot(y,coding=self.truthComponents,gentleCoding=self.gentleCoding)
-				
-			inputChannels = self.inputChannels if not self.__dict__.get('inputChannels',None) is None else example.get('inputChannels',None) if 'inputChannels' in example else None
+			else:
+				y = None
+			
+			inputChannels = inputChannels if not inputChannels is None else self.inputChannels if not self.__dict__.get('inputChannels',None) is None else example.get('inputChannels',None) if 'inputChannels' in example else None
 			if not inputChannels is None:
 				x = numpy.array([nib.load(os.path.join(basepath,example[channel])).get_data() for channel in inputChannels])
 				x = x.transpose(list(range(1,len(x.shape)))+[0])								
@@ -183,6 +185,8 @@ class ImageTrainingData(TrainingData):
 		x = numpy.array(xs); y = numpy.array(ys)
 
 		example = dict(input=x,truth=y,dimensionOrder=['b','z','y','x','c'])
+		if numpy.all(y==None):
+			_ = example.pop('truth')
 		
 		if not self.__dict__.get('attention',None) is None:
 			example['attention'] = self.attention.generate(example)

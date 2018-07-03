@@ -3,7 +3,7 @@ import math,numpy, random
 from collections import OrderedDict
 import dill
 import tensorflow as tf
-from . import Net
+from . import Net, ImageNet
 from .. import Data
 from ..utility import *
 
@@ -226,7 +226,7 @@ class UNet2D(Net):
 
 
 	def preprocessInput(self,example,dimensionOrder=None):
-		dimensionOrder = example.get(dimensionOrder,None) if dimensionOrder is None else dimensionOrder
+		dimensionOrder = example.get('dimensionOrder',None) if dimensionOrder is None else dimensionOrder
 		ret = dict(); ret.update(example);
 		ret['input'] = self.preprocessor.process(example['input'],dimensionOrder=dimensionOrder)
 		if 'truth' in example:
@@ -328,7 +328,7 @@ class UNet3D(Net):
 
 
 	def preprocessInput(self,example,dimensionOrder=None):
-		dimensionOrder = example.get(dimensionOrder,None) if dimensionOrder is None else dimensionOrder
+		dimensionOrder = example.get('dimensionOrder',None) if dimensionOrder is None else dimensionOrder
 		ret = dict(); ret.update(example);
 		ret['input'] = self.preprocessor.process(example['input'],dimensionOrder=dimensionOrder)
 		if 'truth' in example:
