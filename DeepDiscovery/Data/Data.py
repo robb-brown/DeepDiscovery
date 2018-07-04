@@ -339,14 +339,20 @@ class ImagePreprocessor(object):
 					x = numpy.expand_dims(x,-1)
 					dimensionOrder.append(dim)
 
-			# roll any extra dimensions into the batch dimension
+			# discard any extra dimensions
 			extraDimensions = [dim for dim in dimensionOrder if not dim in requiredDimensionOrder]
 			if len(extraDimensions) > 0:
-				tempDimensions = ['b'] + extraDimensions + [dim for dim in requiredDimensionOrder if not dim == 'b']
+				tempDimensions = extraDimensions + requiredDimensionOrder
 				twiddler = [dimensionOrder.index(dim) for dim in tempDimensions]
 				x = x.transpose(twiddler)
-				x.shape = [-1] + [dim for d,dim in enumerate(x.shape) if tempDimensions[d] in requiredDimensionOrder and not tempDimensions[d] == 'b']
-				dimensionOrder = [dim for dim in dimensionOrder if not dim in extraDimensions]
+				x.shape = [-1] + [dim for d,dim in enumerate(x.shape) if tempDimensions[d] in requiredDimensionOrder]
+				if x.shape[0] > 1:
+					logger.error("Restoring dimensions: discarded dimensions contain data. Leaving as first dimension.")
+					dimensionOrder = ['extra'] + [dim for dim in dimensionOrder if not dim in extraDimensions]
+					requiredDimensionOrder = ['extra'] + list(requiredDimensionOrder)
+				else:
+					x = x[0]
+					dimensionOrder = [dim for dim in dimensionOrder if not dim in extraDimensions]
 
 			twiddler = [dimensionOrder.index(dim) for dim in requiredDimensionOrder]
 			x = x.transpose(twiddler)
