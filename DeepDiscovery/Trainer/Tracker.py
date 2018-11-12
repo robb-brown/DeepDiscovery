@@ -156,25 +156,26 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		axis.imshow(output[midSlice],cmap=cmap,origin='lower',alpha=0.3,vmin=0,vmax=1.0)
 		axis.contour(truth[midSlice],colors=['b'],alpha=0.1,linewidths=1,origin='lower')
 
-		# Coronal
-		axis = self.figures['output'].add_subplot(2,2,2);
-		if (truth>0.5).any():
-			midSlice = numpy.argmax(numpy.sum(truth,axis=(0,2)))
-		else:
-			midSlice = truth.shape[1] // 2
-		axis.imshow(inputImage[:,midSlice],cmap=pylab.cm.gray,origin='lower')
-		axis.imshow(output[:,midSlice],cmap=cmap,origin='lower',alpha=0.3,vmin=0,vmax=1.0)
-		axis.contour(truth[:,midSlice],colors=['b'],alpha=0.1,linewidths=1,origin='lower')
+		if inputImage.shape[0] > 2:
+			# Coronal
+			axis = self.figures['output'].add_subplot(2,2,2);
+			if (truth>0.5).any():
+				midSlice = numpy.argmax(numpy.sum(truth,axis=(0,2)))
+			else:
+				midSlice = truth.shape[1] // 2
+			axis.imshow(inputImage[:,midSlice],cmap=pylab.cm.gray,origin='lower')
+			axis.imshow(output[:,midSlice],cmap=cmap,origin='lower',alpha=0.3,vmin=0,vmax=1.0)
+			axis.contour(truth[:,midSlice],colors=['b'],alpha=0.1,linewidths=1,origin='lower')
 
-		# Sagittal
-		axis = self.figures['output'].add_subplot(2,2,3);
-		if (truth>0.5).any():
-			midSlice = numpy.argmax(numpy.sum(truth,axis=(0,1)))
-		else:
-			midSlice = truth.shape[2] // 2
-		axis.imshow(inputImage[:,:,midSlice],cmap=pylab.cm.gray,origin='lower')
-		axis.imshow(output[:,:,midSlice],cmap=cmap,origin='lower',alpha=0.3,vmin=0,vmax=1.0)
-		axis.contour(truth[:,:,midSlice],colors=['b'],alpha=0.1,linewidths=1,origin='lower')
+			# Sagittal
+			axis = self.figures['output'].add_subplot(2,2,3);
+			if (truth>0.5).any():
+				midSlice = numpy.argmax(numpy.sum(truth,axis=(0,1)))
+			else:
+				midSlice = truth.shape[2] // 2
+			axis.imshow(inputImage[:,:,midSlice],cmap=pylab.cm.gray,origin='lower')
+			axis.imshow(output[:,:,midSlice],cmap=cmap,origin='lower',alpha=0.3,vmin=0,vmax=1.0)
+			axis.contour(truth[:,:,midSlice],colors=['b'],alpha=0.1,linewidths=1,origin='lower')
 
 		try:
 			self.figures['output'].savefig(os.path.join(self.basePath,self.name,'output.%s'%self.fileType),transparent=True,bbox_inches='tight')

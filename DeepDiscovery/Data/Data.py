@@ -369,7 +369,7 @@ class SpotStandardization(object):
 		slices = [slice(int(round(x.shape[d]*self.centre/2)),int(round(x.shape[d]*self.centre/2*3))) if dim in self.axes else slice(None) for d,dim in enumerate(dimensionOrder)]
 		centre = x[slices]; 
 		standardizerShape = [1 if dimensionOrder[d] in self.axes else dim for d,dim in enumerate(x.shape)]
-		overAxes = tuple([dimensionOrder.index(d) for d in self.axes])
+		overAxes = tuple([dimensionOrder.index(d) for d in self.axes if d in dimensionOrder])
 
 		if self.method == 'mean':
 			average = numpy.reshape(numpy.average(centre,axis=overAxes),standardizerShape)
