@@ -32,7 +32,17 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 		convDown = tf.layers.conv2d; convUp = tf.layers.conv2d_transpose; maxpoolF = tf.layers.max_pooling2d
 	else:
 		convDown = tf.layers.conv3d; convUp = tf.layers.conv3d_transpose; maxpoolF = tf.layers.max_pooling3d
-
+		
+	# For the time being we use manual upsampling with regular convolution on the way up
+	# TODO: write a version that gives the option to use transposed convolution instead.
+	# This might be more memory and computationally efficient.
+	convUp = convDown
+	
+	if isinstance(filterPlan,dict):
+		filterPlanDown = filterPlan['down']; filterPlanUp = filterPlan['up']
+	else:
+		filterPlanDown = filterPlan; filterPlanUp = filterPlanDown[::-1]
+	
 	downLayers = []; layers = OrderedDict()
 	stride = 1 if maxpool else 2
 	layerThickness = 1 if layerThickness < 1 else layerThickness
@@ -49,7 +59,7 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 	# 				name = 'UNet-Initial')
 
 	downLayers.append(net)
-	for level,nFilters in enumerate(filterPlan):
+	for level,nFilters in enumerate(filterPlanDown):
 		net = convDown(	inputs=net,
 						filters=nFilters,
 						kernel_size=filterSize,
@@ -88,8 +98,7 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 	bottom = net
 
 	logger.debug('U Up')
-	for index in range(0,len(filterPlan)):
-		nFilters = filterPlan[-1-index]
+	for index,nFilters in enumerate(filterPlanUp):
 		# Upsample
 		net = upsample(net,stride); layers[net.name] = net
 		# Concatenation with skip layers
@@ -117,7 +126,7 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 			pass
 		if not dropout is None:
 			net = tf.layers.dropout(net,rate=dropout,name='UNet-UpDropout{}'.format(index+1)); layers[net.name] = net
-		if not index == len(filterPlan)-1:
+		if not index == len(filterPlanUp)-1:
 			for extraIndex in range(layerThickness-1):
 				net = convDown(	inputs=net,
 								filters=nFilters,
@@ -142,6 +151,9 @@ class UNet2D(Net):
 
 	def __init__(self,dimensions=None,inputChannels=1,filterPlan=[10,20,30,40,50],filterSize=(5,5),layerThickness=1,postUDepth=2,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=None,name=None,fname=None,skipChannels=1.0,**args):
 		dimensions = (None,None,inputChannels) if dimensions is None else dimensions
+		if not isinstance(filterPlan,dict):
+			filterPlan = dict(down=filterPlan,up=filterPlan[::-1])
+		
 		self.hyperParameters.update(dict(dimensions=[None] + list(dimensions),
 										inputChannels=inputChannels,
 										filterPlan = filterPlan,
@@ -163,7 +175,7 @@ class UNet2D(Net):
 							Data.ImagePreprocessor(	requiredDimensionOrder = ['b','y','x','c'],
 												crop = args.get('crop',None),
 												standardize = self.standardize,
-												pad = len(self.filterPlan),
+												pad = len(self.filterPlan['down']),
 												mode = '2d',
 												)
 		super().__init__(fname=fname,name=name)
@@ -202,7 +214,7 @@ class UNet2D(Net):
 			self.layers.update(ulayers)
 			for i in range(self.postUDepth):
 				net = self.addLayer(tf.layers.conv2d(	inputs=net,
-										filters=self.filterPlan[0],
+										filters=self.filterPlan['up'][0],
 										kernel_size=self.filterSize,
 										padding='same',
 										activation = self.nonlinearity,
@@ -242,6 +254,8 @@ class UNet3D(Net):
 
 	def __init__(self,dimensions=None,inputChannels=1,filterPlan=[10,20,30,40,50],filterSize=5,layerThickness=1,postUDepth=2,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=None,name=None,fname=None,skipChannels=1.0,**args):
 		dimensions = (None,None,None,inputChannels) if dimensions is None else dimensions
+		if not isinstance(filterPlan,dict):
+			filterPlan = dict(down=filterPlan,up=filterPlan[::-1])
 		self.hyperParameters.update(dict(dropoutProbability=None,
 										dimensions=[None] + list(dimensions),
 										inputChannels = inputChannels,
@@ -264,7 +278,7 @@ class UNet3D(Net):
 							Data.ImagePreprocessor(	requiredDimensionOrder = ['b','z','y','x','c'],
 												crop = args.get('crop',None),
 												standardize = self.standardize,
-												pad = len(self.filterPlan),
+												pad = len(self.filterPlan['down']),
 												mode = '3d',
 												)
 		super().__init__(fname=fname,name=name)
@@ -304,7 +318,7 @@ class UNet3D(Net):
 			self.layers.update(ulayers)
 			for i in range(self.postUDepth):
 				net = self.addLayer(tf.layers.conv3d(	inputs=net,
-										filters=self.filterPlan[0],
+										filters=self.filterPlan['up'][0],
 										kernel_size=self.filterSize,
 										padding='same',
 										activation = self.nonlinearity,
