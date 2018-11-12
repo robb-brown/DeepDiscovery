@@ -146,7 +146,10 @@ class ProgressTracker(DeepRoot.DeepRoot):
 			truth = numpy.where(truth[0,...,1]>0.5,1,0)
 
 		#  Axial
-		axis = self.figures['output'].add_subplot(2,2,1);
+		if inputImage.shape[0] > 2:
+			axis = self.figures['output'].add_subplot(2,2,1);
+		else:
+			axis = self.figures['output'].add_subplot(1,1,1);
 		if (truth>0.5).any():
 			midSlice = numpy.argmax(numpy.sum(truth,axis=(1,2)))
 		else:
