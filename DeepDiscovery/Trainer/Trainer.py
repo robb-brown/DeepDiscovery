@@ -32,7 +32,7 @@ class CrossEntropyCost(CostFunction):
 		cost = tf.keras.losses.categorical_crossentropy(self.net.yp,self.net.y)
 		if self.attention:
 			self.modelParameters['attentionOp'] = tf.placeholder('float',shape=self.net.yp.get_shape(),name='attention')
-			cost *= self.attentionOp[...,0]
+			cost *= self.attentionOp[...,0] / tf.reduce_mean(self.modelParameters['attentionOp'][...,0])
 			self.requiredInputs.append(self.attentionOp)
 		cost = tf.reduce_mean(cost)
 		self.requiredInputs += [self.net.yp]
