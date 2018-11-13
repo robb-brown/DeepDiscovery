@@ -93,11 +93,12 @@ class Trainer(DeepRoot.DeepRoot):
 				metrics = dict(self.metricNames)
 			net = self.net
 			for metric in metrics:
-				if metrics[metric] is None:
+				if (metrics[metric] is None) or isinstance(metrics[metric],[list,tuple,dict]):
 					if metric == 'cost':
 						metrics[metric] = self.costOp
 					elif metric == 'output':
-						metrics[metric] = [net.x,net.y,net.yp]
+						outputs = [net.x,net.y,net.yp] if metrics[metric] is None else metrics[metric]
+						metrics[metric] = [i for i in outputs if not i is None]
 					elif metric == 'accuracy':
 						correctPrediction = tf.equal(tf.argmax(net.y,axis=-1),tf.argmax(net.yp,axis=-1))
 						accuracy = tf.reduce_mean(tf.cast(correctPrediction,'float'))
@@ -108,8 +109,8 @@ class Trainer(DeepRoot.DeepRoot):
 							truth = tf.cast(tf.argmax(net.yp,axis=-1), dtype=tf.float32)
 						else:
 							output = tf.cast(tf.one_hot(tf.argmax(net.y,axis=-1),depth=net.y.shape[-1])[...,1:], dtype=tf.float32)
-							truth = tf.cast(tf.one_hot(tf.argmax(net.yp,axis=-1),depth=net.y.shape[-1])[...,1:], dtype=tf.float32)							
-						
+							truth = tf.cast(tf.one_hot(tf.argmax(net.yp,axis=-1),depth=net.y.shape[-1])[...,1:], dtype=tf.float32)
+
 						intersection = tf.reduce_sum(tf.multiply(output, truth))
 						union = tf.reduce_sum(tf.cast(tf.add(output, truth) >= 1,dtype=tf.float32))
 						jaccard = tf.reduce_mean(intersection / union)

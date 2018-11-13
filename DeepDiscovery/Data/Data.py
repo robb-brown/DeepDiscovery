@@ -71,7 +71,7 @@ class TrainingData(object):
 		return trainSet,testSet,validationSet,classes
 
 
-	def getExamples(self,dataset,N=1,balanceClasses=None,specificExamples = None):
+	def getExamples(self,dataset,N=1,balanceClasses=None,specificExamples = None,retry=True):
 		balanceClasses = balanceClasses if balanceClasses is not None else self.balanceClasses
 		if not specificExamples is None:
 			examples = self.examples[dataset[specificExamples]]
@@ -82,8 +82,19 @@ class TrainingData(object):
 			examples = self.examples[examples]
 		else:
 			examples = self.examples[numpy.random.choice(list(dataset),N,replace=False)]
-		return self.preprocessExamples(copy.deepcopy(examples))
-	
+		try:
+			return self.preprocessExamples(copy.deepcopy(examples))
+		except:
+			logger.exception('\n\nException preprocessing example. Retrying')
+			if specificExamples is None and retry:
+				count = 0; ret = None
+				while (count < 5) and (ret is None):
+					count += 1
+					ret = self.getExamples(dataset=dataset,N=N,balanceClasses=balanceClasses,specificExamples=specificExamples,retry=False)
+			else:
+				ret = None
+			return ret
+
 	def getTrainingExamples(self,N=1,balanceClasses=None,specificExamples = None):
 		return self.getExamples(self.trainSet,N=N,balanceClasses=balanceClasses,specificExamples=specificExamples)
 
@@ -165,11 +176,11 @@ class ImageTrainingData(TrainingData):
 					y = utility.convertToOneHot(y,coding=self.truthComponents,gentleCoding=self.gentleCoding)
 			else:
 				y = None
-			
+
 			inputChannels = inputChannels if not inputChannels is None else self.inputChannels if not self.__dict__.get('inputChannels',None) is None else example.get('inputChannels',None) if 'inputChannels' in example else None
 			if not inputChannels is None:
 				x = numpy.array([nib.load(os.path.join(basepath,example[channel])).get_data() for channel in inputChannels])
-				x = x.transpose(list(range(1,len(x.shape)))+[0])								
+				x = x.transpose(list(range(1,len(x.shape)))+[0])
 			else:
 				x = nib.load(os.path.join(basepath,example['input'])).get_data()
 				x = numpy.expand_dims(x,-1)
@@ -187,7 +198,7 @@ class ImageTrainingData(TrainingData):
 		example = dict(input=x,truth=y,dimensionOrder=['b','z','y','x','c'])
 		if numpy.all(y==None):
 			_ = example.pop('truth')
-		
+
 		if not self.__dict__.get('attention',None) is None:
 			example['attention'] = self.attention.generate(example)
 
@@ -235,16 +246,16 @@ class ImagePreprocessor(object):
 
 	def __init__(self,dimensionOrder=['b','z','y','x','c'],requiredDimensionOrder=None,crop=None,standardize=None,pad=None,mode='3d'):
 		"""
-			crop is a dictionary with keys that are single character dimension codes and values are 
+			crop is a dictionary with keys that are single character dimension codes and values are
 				arguments to slice() (start, end, [step]).
 
-			standardize is a function that takes the data and dimensionOrder as arguments and 
+			standardize is a function that takes the data and dimensionOrder as arguments and
 				returns a standardized version.
 
-			pad is False or a depth for standard CNN hierarchy.  
+			pad is False or a depth for standard CNN hierarchy.
 
 		"""
-		self.dimensionOrder = dimensionOrder; self.requiredDimensionOrder = requiredDimensionOrder; 
+		self.dimensionOrder = dimensionOrder; self.requiredDimensionOrder = requiredDimensionOrder;
 		self.crop = crop; self.standardize=standardize; self.pad = pad; self.mode = mode
 
 
@@ -254,7 +265,7 @@ class ImagePreprocessor(object):
 		requiredDimensionOrder = copy.deepcopy(requiredDimensionOrder)
 		dimensionOrder = copy.deepcopy(dimensionOrder)
 		standardize = False if oneHot else self.standardize if standardize is None else standardize
-		
+
 
 		# Cropping
 		if not (self.crop is None or self.crop == False):
@@ -282,7 +293,7 @@ class ImagePreprocessor(object):
 				if not dim in dimensionOrder:
 					x = numpy.expand_dims(x,-1)
 					dimensionOrder.append(dim)
-			
+
 			# roll any extra dimensions into the batch dimension
 			extraDimensions = [dim for dim in dimensionOrder if not dim in requiredDimensionOrder]
 			if len(extraDimensions) > 0:
@@ -292,7 +303,7 @@ class ImagePreprocessor(object):
 				dimensionOrder = tempDimensions
 				x.shape = [-1] + [dim for d,dim in enumerate(x.shape) if tempDimensions[d] in requiredDimensionOrder and not tempDimensions[d] == 'b']
 				dimensionOrder = [dim for dim in dimensionOrder if not dim in extraDimensions]
-			
+
 			twiddler = [dimensionOrder.index(dim) for dim in requiredDimensionOrder]
 			x = x.transpose(twiddler)
 
@@ -304,7 +315,7 @@ class ImagePreprocessor(object):
 		dimensionOrder = dimensionOrder if not dimensionOrder is None else self.requiredDimensionOrder if not self.requiredDimensionOrder is None else requiredDimensionOrder
 		requiredDimensionOrder = copy.deepcopy(requiredDimensionOrder)
 		dimensionOrder = copy.deepcopy(dimensionOrder)
-		
+
 		# padding
 		if not (self.pad is None or self.pad == False):
 			if self.crop:
@@ -367,7 +378,7 @@ class SpotStandardization(object):
 
 	def standardize(self,x,dimensionOrder):
 		slices = [slice(int(round(x.shape[d]*self.centre/2)),int(round(x.shape[d]*self.centre/2*3))) if dim in self.axes else slice(None) for d,dim in enumerate(dimensionOrder)]
-		centre = x[slices]; 
+		centre = x[slices];
 		standardizerShape = [1 if dimensionOrder[d] in self.axes else dim for d,dim in enumerate(x.shape)]
 		overAxes = tuple([dimensionOrder.index(d) for d in self.axes if d in dimensionOrder])
 
@@ -376,7 +387,7 @@ class SpotStandardization(object):
 			std = numpy.reshape(numpy.std(centre,axis=overAxes),standardizerShape)
 		else:
 			average = numpy.reshape(numpy.median(centre,axis=overAxes),standardizerShape)
-			std = numpy.reshape(numpy.percentile(centre, 75,axis=overAxes) - numpy.percentile(centre, 25,axis=overAxes),standardizerShape)			
+			std = numpy.reshape(numpy.percentile(centre, 75,axis=overAxes) - numpy.percentile(centre, 25,axis=overAxes),standardizerShape)
 		#x = (x-average) / std
 		x = x / std
 		return x
@@ -396,7 +407,7 @@ class GlobalStandardization(SpotStandardization):
 			std = numpy.reshape(numpy.std(x,axis=overAxes),standardizerShape)
 		else:
 			average = numpy.reshape(numpy.median(x,axis=overAxes),standardizerShape)
-			std = numpy.reshape(numpy.percentile(x, 75,axis=overAxes) - numpy.percentile(x, 25,axis=overAxes),standardizerShape)			
+			std = numpy.reshape(numpy.percentile(x, 75,axis=overAxes) - numpy.percentile(x, 25,axis=overAxes),standardizerShape)
 		#x = (x - average) / std
 		x = x / std
 		return x
@@ -406,10 +417,10 @@ class GlobalStandardization(SpotStandardization):
 
 class EdgeBiasedAttention(object):
 	def __init__(self,edgeFalloff=10,background=0.01,approximate=True,balanceClasses=True,gentleBalance=10.0):
-		self.edgeFalloff = edgeFalloff; self.background = background; 
+		self.edgeFalloff = edgeFalloff; self.background = background;
 		self.approximate = approximate
 		self.balanceClasses = balanceClasses; self.gentleBalance = gentleBalance
-	
+
 	def generate(self,example):
 		y = numpy.around(example['truth'][...,0]).astype(numpy.uint8)
 		if self.approximate:
@@ -432,4 +443,3 @@ class EdgeBiasedAttention(object):
 		attention = numpy.reshape(attention,y.shape)
 		attention = numpy.expand_dims(attention,-1)
 		return attention
-		
