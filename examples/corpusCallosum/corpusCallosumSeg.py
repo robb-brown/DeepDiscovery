@@ -33,7 +33,7 @@ examples = [dict(input=i,truth=i.replace('.nii.gz','_cc.nii.gz')) for i in image
 # give an integer value (like 1) that would reserve that many examples.
 # We're training a segmenter, so we need our truth image converted into one-hot (one channel per class).
 # We have two classes (not corpus callosum = 0 and corpus callosum = 1) so we set truthComponents to
-# [1,0].  The first channel will be the positive mask.
+# [0,1].  The first channel will be the positive mask.
 trainingData = dd.Data.ImageTrainingData(examples,reserveForValidation=0.1,reserveForTest=0,truthComponents=[0,1],gentleCoding=0.9)
 
 
@@ -65,7 +65,7 @@ if 1:
 	# the U net. We give our network a name so that it is distinct from others we might load or create
 	# (it puts its tensorflow variables into a variable scope based on the name) and will also
 	# default to saving itself under that name.
-	filterPlan = [10,20,30]; filterSize = 5; postUDepth = 1; standardize=True; inputDropout = True
+	filterPlan = [10,20,30,40]; filterSize = 5; postUDepth = 1; standardize=True; inputDropout = True
 	segmenter = dd.Net.Segmenter2D(filterPlan=filterPlan,filterSize=filterSize,postUDepth=postUDepth,standardize=standardize,inputDropout=inputDropout,name='CorpusCallosum2D')
 	# ---------------------------------------------------------------------
 
@@ -74,7 +74,7 @@ if 1:
 	# the performance of the network as it is trained, creates graphs, and dumps these to files
 	# on disk so we can look at them or serve them with a webserver.
 	tracker = dd.Trainer.ProgressTracker(logPlots=False,plotEvery=50,basePath='./tracker')
-	cost = dd.Trainer.CrossEntropyCost(net=segmenter,attention=False)
+	cost = dd.Trainer.CrossEntropyCost(net=segmenter,attention=True)
 	metrics = ['output','cost','jaccard']; learning_rate = 1e-3
 	trainer = dd.Trainer.Trainer(net=segmenter,cost=cost,examples=trainingData,progressTracker=tracker,metrics=metrics,learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1e-08)
 	# ---------------------------------------------------------------------
@@ -98,7 +98,7 @@ print('\n\n\n')
 # We can set separate arguments for the training and validation parts.  Here we set the dropout
 # on the input data to 0.5 for training but turn it off for validation.
 trainArgs=dict(inputDropout=0.5); validateArgs = dict(inputDropout=0.0)
-trainer.train(trainTime=0.1,examplesPerEpoch=5,trainingExamplesPerBatch=1,trainArgs=trainArgs,validateArgs=validateArgs)
+trainer.train(trainTime=0.15,examplesPerEpoch=5,trainingExamplesPerBatch=1,trainArgs=trainArgs,validateArgs=validateArgs)
 # ---------------------------------------------------------------------
 
 # ------------------------- Save the trainer, tracker and network -----------------------------------
