@@ -9,7 +9,7 @@
     <meta name="MobileOptimized" content="320">
 
     <meta name="viewport" content="width=device-width,minimum-scale=1">
-    <meta name="generator" content="Hugo 0.50" />
+    <meta name="generator" content="Hugo 0.41" />
     
     
       <META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW">
@@ -29,16 +29,31 @@
     
 
     <meta property="og:title" content="Installation" />
-<meta property="og:description" content="If you would like to use anaconda, miniconda, or some other packaging system, or you have difficulty with these instructions, you can follow the TensorFlow installation instructions for your system, then skip to step 4. Currently Deep Discovery works with TensorFlow version 1.4 and Python 3.X.
+<meta property="og:description" content="If you would like to use anaconda, miniconda, or some other packaging system, or you have difficulty with these instructions, you can follow the TensorFlow installation instructions for your system, then skip to step 4. Currently Deep Discovery works with TensorFlow version 1.14&#43; or 2.0 and Python 3.X.
 Installation Steps:
  Install Python
 If your system doesn&rsquo;t have a pre-installed Python 3, or if you&rsquo;d rather not use the system Python, download Python 3 from python." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="http://www.deepdiscovery.org/tutorials/installation/" /><meta property="article:published_time" content="2018-05-27T15:59:22-04:00"/>
+<meta property="og:url" content="http://www.deepdiscovery.org/tutorials/installation/" />
+
+
+
+<meta property="article:published_time" content="2018-05-27T15:59:22-04:00"/>
+
 <meta property="article:modified_time" content="2018-05-27T15:59:22-04:00"/>
 
+
+
+
+
+
+
+
+
+
+
 <meta itemprop="name" content="Installation">
-<meta itemprop="description" content="If you would like to use anaconda, miniconda, or some other packaging system, or you have difficulty with these instructions, you can follow the TensorFlow installation instructions for your system, then skip to step 4. Currently Deep Discovery works with TensorFlow version 1.4 and Python 3.X.
+<meta itemprop="description" content="If you would like to use anaconda, miniconda, or some other packaging system, or you have difficulty with these instructions, you can follow the TensorFlow installation instructions for your system, then skip to step 4. Currently Deep Discovery works with TensorFlow version 1.14&#43; or 2.0 and Python 3.X.
 Installation Steps:
  Install Python
 If your system doesn&rsquo;t have a pre-installed Python 3, or if you&rsquo;d rather not use the system Python, download Python 3 from python.">
@@ -46,14 +61,14 @@ If your system doesn&rsquo;t have a pre-installed Python 3, or if you&rsquo;d ra
 
 <meta itemprop="datePublished" content="2018-05-27T15:59:22-04:00" />
 <meta itemprop="dateModified" content="2018-05-27T15:59:22-04:00" />
-<meta itemprop="wordCount" content="420">
+<meta itemprop="wordCount" content="468">
 
 
 
 <meta itemprop="keywords" content="" />
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Installation"/>
-<meta name="twitter:description" content="If you would like to use anaconda, miniconda, or some other packaging system, or you have difficulty with these instructions, you can follow the TensorFlow installation instructions for your system, then skip to step 4. Currently Deep Discovery works with TensorFlow version 1.4 and Python 3.X.
+<meta name="twitter:description" content="If you would like to use anaconda, miniconda, or some other packaging system, or you have difficulty with these instructions, you can follow the TensorFlow installation instructions for your system, then skip to step 4. Currently Deep Discovery works with TensorFlow version 1.14&#43; or 2.0 and Python 3.X.
 Installation Steps:
  Install Python
 If your system doesn&rsquo;t have a pre-installed Python 3, or if you&rsquo;d rather not use the system Python, download Python 3 from python."/>
@@ -117,13 +132,13 @@ If your system doesn&rsquo;t have a pre-installed Python 3, or if you&rsquo;d ra
       <time class="f6 mv4 dib tracked" datetime="2018-05-27T15:59:22-04:00">May 27, 2018</time>
     </header>
 
-    <main class="helvetica nested-copy-line-height lh-copy serif f4 nested-links nested-img mid-gray pr4-l w-two-thirds-l mh4">
+    <main class="helvetica nested-copy-line-height lh-copy serif f4 nested-links nested-img mid-gray pr4-l mh4">
 		
 			<div class="i mh4 tc">
-  <p>This page is a beta.  If you find errors, have problems, or have comments, please report them <a href="https://github.com/robb-brown/DeepDiscovery/issues/new">here</a>.
+  <p>This page is a beta.  If you find errors, have problems, or have comments, please report them <a href="https://github.com/robb-brown/DeepDiscovery/issues/new">here</a> (a free github account is required).
 </div>
 
-		<p><em>If you would like to use anaconda, miniconda, or some other packaging system, or you have difficulty with these instructions, you can follow the <a href="https://www.tensorflow.org/install/">TensorFlow</a> installation instructions for your system, then skip to step 4. Currently Deep Discovery works with TensorFlow version 1.4 and Python 3.X.</em></p>
+		<p><em>If you would like to use anaconda, miniconda, or some other packaging system, or you have difficulty with these instructions, you can follow the <a href="https://www.tensorflow.org/install/">TensorFlow</a> installation instructions for your system, then skip to step 4. Currently Deep Discovery works with TensorFlow version 1.14+ or 2.0 and Python 3.X.</em></p>
 
 <p>Installation Steps:</p>
 
@@ -156,15 +171,15 @@ You should now see an indicator such as <code>(ddenv)</code> in your command pro
 <li><p>Install TensorFlow</p>
 
 <p>Deep Discovery can&rsquo;t reliably install TensorFlow on all systems. You can follow the install instructions for TensorFlow, remembering that you already have a functioning virtual environment, or try:<br />
-<p align="center"><code>pip install tensorflow==1.4.0</code></p>
-If this fails, on a Mac try:
-<p align="center"><code>pip install https://storage.googleapis.com/tensorflow/mac/cpu/tensorflow-1.4.0-py3-none-any.whl</code></p>
-If you have a compatible NVIDIA GPU you might also want to install TensorFlow support for it:
-<p align="center"><code>pip install tensorflow-gpu==1.4.0</code></p></p></li>
+<p align="center"><code>pip install tensorflow</code></p>
+If you have a compatible NVIDIA GPU you might also want to install TensorFlow support for it (this is included in the previous installation in TensorFlow 2.0+):
+<p align="center"><code>pip install tensorflow-gpu</code></p></p></li>
 
 <li><p>Install Deep Discovery</p>
 
-<p>We&rsquo;ll use the Python program <code>pip</code> to install the Deep Discovery package and all its dependencies.  Making sure you&rsquo;re in your virtual environment, type:<br />
+<p>We&rsquo;ll use the Python program <code>pip</code> to install the Deep Discovery package and all its dependencies. First, you&rsquo;ll need a copy of Git, in order to download the code. Git is one of the most common source code management systems, so it&rsquo;s a good idea to have a copy anyway. If it&rsquo;s not already installed on your system, follow the instructions <a href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git">here</a>.</p>
+
+<p>Making sure you&rsquo;re in your virtual environment, type:<br />
     <p align="center"><code>pip install git+git://github.com/robb-brown/DeepDiscovery.git</code></p>
 Pip will report that it is collecting Deep Discovery from git, and will begin installing packages, such as matplotlib, numpy, and pandas. Depending on the speed of your computer and Internet connection, this may take some time.</p></li>
 

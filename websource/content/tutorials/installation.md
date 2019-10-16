@@ -5,7 +5,7 @@ draft: false
 beta: true
 ---
 
-*If you would like to use anaconda, miniconda, or some other packaging system, or you have difficulty with these instructions, you can follow the [TensorFlow](https://www.tensorflow.org/install/) installation instructions for your system, then skip to step 4. Currently Deep Discovery works with TensorFlow version 1.4 and Python 3.X.*
+*If you would like to use anaconda, miniconda, or some other packaging system, or you have difficulty with these instructions, you can follow the [TensorFlow](https://www.tensorflow.org/install/) installation instructions for your system, then skip to step 4. Currently Deep Discovery works with TensorFlow version 1.14+ or 2.0 and Python 3.X.*
 
 Installation Steps:
 
@@ -35,15 +35,15 @@ Installation Steps:
 3. Install TensorFlow
 	
 	Deep Discovery can't reliably install TensorFlow on all systems. You can follow the install instructions for TensorFlow, remembering that you already have a functioning virtual environment, or try:	
-	<p align="center">```pip install tensorflow==1.4.0```</p>
-	If this fails, on a Mac try:
-	<p align="center">```pip install https://storage.googleapis.com/tensorflow/mac/cpu/tensorflow-1.4.0-py3-none-any.whl```</p>
-	If you have a compatible NVIDIA GPU you might also want to install TensorFlow support for it:
-	<p align="center">```pip install tensorflow-gpu==1.4.0```</p>
+	<p align="center">```pip install tensorflow```</p>
+	If you have a compatible NVIDIA GPU you might also want to install TensorFlow support for it (this is included in the previous installation in TensorFlow 2.0+):
+	<p align="center">```pip install tensorflow-gpu```</p>
 	
 4. Install Deep Discovery
 
-	We'll use the Python program ```pip``` to install the Deep Discovery package and all its dependencies.  Making sure you're in your virtual environment, type:  
+	We'll use the Python program ```pip``` to install the Deep Discovery package and all its dependencies. First, you'll need a copy of Git, in order to download the code. Git is one of the most common source code management systems, so it's a good idea to have a copy anyway. If it's not already installed on your system, follow the instructions [here](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
+	
+	Making sure you're in your virtual environment, type:  
 		<p align="center">```pip install git+git://github.com/robb-brown/DeepDiscovery.git```</p>
 	Pip will report that it is collecting Deep Discovery from git, and will begin installing packages, such as matplotlib, numpy, and pandas. Depending on the speed of your computer and Internet connection, this may take some time.
 

@@ -29,7 +29,7 @@ Create a new python program in your working directory and open it in your favour
       <pubDate>Sun, 27 May 2018 15:59:22 -0400</pubDate>
       
       <guid>http://www.deepdiscovery.org/tutorials/installation/</guid>
-      <description>If you would like to use anaconda, miniconda, or some other packaging system, or you have difficulty with these instructions, you can follow the TensorFlow installation instructions for your system, then skip to step 4. Currently Deep Discovery works with TensorFlow version 1.4 and Python 3.X.
+      <description>If you would like to use anaconda, miniconda, or some other packaging system, or you have difficulty with these instructions, you can follow the TensorFlow installation instructions for your system, then skip to step 4. Currently Deep Discovery works with TensorFlow version 1.14+ or 2.0 and Python 3.X.
 Installation Steps:
  Install Python
 If your system doesn&amp;rsquo;t have a pre-installed Python 3, or if you&amp;rsquo;d rather not use the system Python, download Python 3 from python.</description>

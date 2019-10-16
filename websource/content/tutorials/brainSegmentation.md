@@ -7,7 +7,7 @@ beta: true
 
 This tutorial shows how to load a trained model, use it to segment an image, and save the resulting brain probability map.
 
-Example data and a trained 2d brain segmentation model can be found [here](https://github.com/robb-brown/DeepDiscovery/tree/master/tutorials/brainSegmentation). For this tutorial, download both and put them in a working directory. The directory also contains ```segment.py``` if you'd rather not type out the tutorial code.
+Example data and a trained 2d brain segmentation model can be found [here](https://github.com/robb-brown/DeepDiscovery/tree/master/examples/brainSegmentation). For this tutorial, download both and put them in a working directory. The directory also contains ```segment.py``` if you'd rather not type out the tutorial code.
 
 Create a new python program in your working directory and open it in your favourite code editor; for this tutorial we'll assume you called it ```segment.py```. You can type (or copy and paste) code into this file as we go.  You may also wish to open a terminal, start Python, and copy and paste code into the interactive interpreter as well.
 

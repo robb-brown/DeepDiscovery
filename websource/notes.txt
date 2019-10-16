@@ -1,0 +1,14 @@
+Start hugo server with drafts enabled:
+
+hugo server -D
+
+Create a post:
+
+hugo new posts/my-first-post.md
+
+
+To build:
+
+hugo
+
+Build will go in publishDir, configured in config.
