@@ -2,7 +2,7 @@ import time,os,copy,sys
 import math,numpy, random
 from collections import OrderedDict
 import dill
-import tensorflow as tf
+from .. tensorflowCompat import tf
 from . import Net
 from .. import Data
 from ..utility import *

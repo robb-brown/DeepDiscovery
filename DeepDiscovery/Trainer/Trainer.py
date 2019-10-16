@@ -1,4 +1,4 @@
-import tensorflow as tf
+from .. tensorflowCompat import tf
 import time, datetime, os, dill, numpy, sys, glob
 from collections import OrderedDict
 from .. import DeepRoot, Net, utility

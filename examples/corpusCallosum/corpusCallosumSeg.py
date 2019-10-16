@@ -4,7 +4,7 @@ matplotlib.interactive(True)
 
 import DeepDiscovery as dd
 import glob, os
-import tensorflow as tf
+from DeepDiscovery import tf
 import numpy
 
 import logging

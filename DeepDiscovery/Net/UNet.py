@@ -2,7 +2,7 @@ import time,os,copy,sys
 import math,numpy, random
 from collections import OrderedDict
 import dill
-import tensorflow as tf
+from .. tensorflowCompat import tf
 from . import Net, ImageNet
 from .. import Data
 from ..utility import *
@@ -27,7 +27,7 @@ def upsample(x,factor,dataFormat='channels_last',name='repeat'):
 
 
 def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropout=None,normalization=None,activation=tf.nn.relu,dimensions=3,skip=1.0):
-	init = tf.contrib.layers.xavier_initializer()
+	init = tf.glorot_normal_initializer
 	if dimensions == 2:
 		convDown = tf.layers.conv2d; convUp = tf.layers.conv2d_transpose; maxpoolF = tf.layers.max_pooling2d
 	else:
@@ -106,7 +106,10 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 			skipChannels = downLayers[::-1][index+1]
 			#print('net is: {}; Merging {} from layer {}'.format(net.shape,skipChannels.shape,len(downLayers)-(index+1)))
 			if isinstance(skip,float):
-				localSkip = int(math.ceil(skipChannels.shape[-1].value*skip))
+				try:				# TF 1 vs. 2 incompatability: dimensions act like arrays now
+					localSkip = int(math.ceil(skipChannels.shape[-1].value*skip))
+				except:
+					localSkip = int(math.ceil(skipChannels.shape[-1]*skip))
 			else:
 				localSkip = skip
 			if localSkip > 0:
@@ -183,7 +186,7 @@ class UNet2D(Net):
 
 	def create(self):
 		"""Override this method to customize your model"""
-		init = tf.contrib.layers.xavier_initializer()
+		init = tf.glorot_normal_initializer
 
 		with tf.variable_scope(self.name):
 			self.x = tf.placeholder('float',shape=self.dimensions,name='input')
@@ -286,7 +289,7 @@ class UNet3D(Net):
 
 	def create(self):
 		"""Override this method to customize your model"""
-		init = tf.contrib.layers.xavier_initializer()
+		init = tf.glorot_normal_initializer
 
 		with tf.variable_scope(self.name):
 			self.x = tf.placeholder('float',shape=self.dimensions,name='input')

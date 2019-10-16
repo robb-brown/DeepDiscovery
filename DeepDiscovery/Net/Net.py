@@ -6,7 +6,7 @@ from collections import OrderedDict
 from .. import DeepRoot
 from ..utility import onlyMyArguments
 import sys
-import tensorflow as tf
+from .. tensorflowCompat import tf
 
 import logging
 

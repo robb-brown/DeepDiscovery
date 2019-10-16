@@ -1,3 +1,4 @@
+from . tensorflowCompat import tf
 import sys,traceback
 from . import utility
 from . import Data

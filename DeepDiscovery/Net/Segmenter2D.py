@@ -1,6 +1,6 @@
 from .UNet import UNet2D
 import numpy, random, math, time, dill, os, sys, copy
-import tensorflow as tf
+from .. tensorflowCompat import tf
 from collections import OrderedDict
 
 from .. import utility
@@ -21,7 +21,7 @@ class Segmenter2D(UNet2D):
 		super().create()
 		with tf.variable_scope(self.name):
 			self.modelParameters['logits'] = None
-			init = tf.contrib.layers.xavier_initializer()
+			init = tf.glorot_normal_initializer
 			self.net = self.addLayer(tf.layers.conv2d(self.net, filters=self.outputValues, kernel_size = 1, padding='same', activation=None,kernel_initializer = None,data_format='channels_last'))
 			self.logits = self.net
 			self.y = self.output = self.net = self.addLayer(tf.nn.softmax(self.logits,-1,name='softmax'))
