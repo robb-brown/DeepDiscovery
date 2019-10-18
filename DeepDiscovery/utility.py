@@ -55,7 +55,7 @@ def padImage(img,depth,mode='2d',spatialAxes=[0,1,2],shape=None,oneHot=False):
 				img = numpy.rollaxis(img,axis)[start:start+shape[axis]]
 				img = numpy.rollaxis(img,0,len(img.shape)+axis+1)
 
-	newShape,dims1,dims2 = computePad(numpy.array(img.shape)[[spatialAxes]],depth,shape)
+	newShape,dims1,dims2 = computePad(numpy.array(img.shape)[tuple([spatialAxes])],depth,shape)
 	dims = [(0,0) for i in img.shape]
 	for a,ax in enumerate(spatialAxes):
 		dims[ax] = (dims1[a],dims2[a])

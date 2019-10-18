@@ -156,7 +156,7 @@ class UNet2D(Net):
 		dimensions = (None,None,inputChannels) if dimensions is None else dimensions
 		if not isinstance(filterPlan,dict):
 			filterPlan = dict(down=filterPlan,up=filterPlan[::-1])
-		
+				
 		self.hyperParameters.update(dict(dimensions=[None] + list(dimensions),
 										inputChannels=inputChannels,
 										filterPlan = filterPlan,
@@ -187,6 +187,10 @@ class UNet2D(Net):
 	def create(self):
 		"""Override this method to customize your model"""
 		init = tf.glorot_normal_initializer
+		
+		# for compatability with older saved models
+		if not isinstance(self.filterPlan,dict):
+			self.filterPlan = dict(down=self.filterPlan,up=self.filterPlan[::-1])
 
 		with tf.variable_scope(self.name):
 			self.x = tf.placeholder('float',shape=self.dimensions,name='input')
@@ -217,7 +221,7 @@ class UNet2D(Net):
 			self.layers.update(ulayers)
 			for i in range(self.postUDepth):
 				net = self.addLayer(tf.layers.conv2d(	inputs=net,
-										filters=self.filterPlan['up'][0],
+										filters=self.filterPlan['up'][-1],
 										kernel_size=self.filterSize,
 										padding='same',
 										activation = self.nonlinearity,
@@ -290,7 +294,11 @@ class UNet3D(Net):
 	def create(self):
 		"""Override this method to customize your model"""
 		init = tf.glorot_normal_initializer
-
+		
+		# for compatability with older saved models
+		if not isinstance(self.filterPlan,dict):
+			self.filterPlan = dict(down=self.filterPlan,up=self.filterPlan[::-1])
+		
 		with tf.variable_scope(self.name):
 			self.x = tf.placeholder('float',shape=self.dimensions,name='input')
 
@@ -319,9 +327,9 @@ class UNet3D(Net):
 
 			net,ulayers = uNet(net,filterPlan = self.filterPlan,filterSize = self.filterSize,maxpool=self.maxpool,layerThickness=self.layerThickness,normalization=self.normalization,dimensions=3,skip=self.skipChannels)
 			self.layers.update(ulayers)
-			for i in range(self.postUDepth):
+			for i in range(self.postUDepth):				
 				net = self.addLayer(tf.layers.conv3d(	inputs=net,
-										filters=self.filterPlan['up'][0],
+										filters=self.filterPlan['up'][-1],
 										kernel_size=self.filterSize,
 										padding='same',
 										activation = self.nonlinearity,

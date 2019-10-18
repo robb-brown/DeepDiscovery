@@ -1,5 +1,5 @@
 import DeepDiscovery as dd
-import tensorflow as tf
+from DeepDiscovery import tf
 import nibabel as nib
 import pylab
 
