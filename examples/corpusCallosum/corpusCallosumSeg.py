@@ -4,8 +4,12 @@ matplotlib.interactive(True)
 
 import DeepDiscovery as dd
 import glob, os
-from DeepDiscovery import tf
 import numpy
+
+# It's useful to import tf from DeepDiscovery. DD provides a compatability layer
+# that's required to support different versions of tensorflow.
+from DeepDiscovery import tf
+
 
 import logging
 logger = logging.getLogger(__name__)
@@ -57,7 +61,7 @@ example = trainingData.getTrainingExamples(1)
 
 session = tf.InteractiveSession()
 
-if 1:
+if not os.path.exists('CorpusCallosum2D.net'):
 	# -----------------------  Creating a Network ------------------------
 	# This is where we create our actual model.  Let's use a Segmenter2D, which implements something
 	# similar to a U or V net. filterPlan is the number of filters at each downsampling layer.
@@ -98,7 +102,9 @@ print('\n\n\n')
 # We can set separate arguments for the training and validation parts.  Here we set the dropout
 # on the input data to 0.5 for training but turn it off for validation.
 trainArgs=dict(inputDropout=0.5); validateArgs = dict(inputDropout=0.0)
-trainer.train(trainTime=0.15,examplesPerEpoch=5,trainingExamplesPerBatch=1,trainArgs=trainArgs,validateArgs=validateArgs)
+
+# Train for 10 minutes (10./60. hours)
+trainer.train(trainTime=10./60.,examplesPerEpoch=5,trainingExamplesPerBatch=1,trainArgs=trainArgs,validateArgs=validateArgs)
 # ---------------------------------------------------------------------
 
 # ------------------------- Save the trainer, tracker and network -----------------------------------
