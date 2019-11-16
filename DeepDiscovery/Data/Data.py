@@ -74,18 +74,22 @@ class TrainingData(object):
 	def getExamples(self,dataset,N=1,balanceClasses=None,specificExamples = None,retry=True):
 		balanceClasses = balanceClasses if balanceClasses is not None else self.balanceClasses
 		if not specificExamples is None:
+			indices = specificExamples
 			examples = self.examples[dataset[specificExamples]]
 		elif balanceClasses:
 			classN = len(self.classes.keys())
 			examples = list(numpy.array([numpy.random.choice(list(set(dataset).intersection(set(self.classes[c]))),N/classN,replace=False) for c in self.classes.keys()]).ravel())
 			if len(examples) < N: examples += list(numpy.random.choice(list(set(dataset) - set(examples)),N-len(examples),replace=False))
+			indices = examples
 			examples = self.examples[examples]
 		else:
-			examples = self.examples[numpy.random.choice(list(dataset),N,replace=False)]
+			indices = numpy.random.choice(list(dataset),N,replace=False)
+			examples = self.examples[indices]
+		self.lastIndices = indices
 		try:
 			return self.preprocessExamples(copy.deepcopy(examples))
 		except:
-			logger.exception('\n\nException preprocessing example. Retrying')
+			logger.exception('\n\nException preprocessing examples {}. Retrying'.format(indices))
 			if specificExamples is None and retry:
 				count = 0; ret = None
 				while (count < 5) and (ret is None):
@@ -270,7 +274,7 @@ class ImagePreprocessor(object):
 		# Cropping
 		if not (self.crop is None or self.crop == False):
 			slices = [slice(*self.crop.get(dimension,[None])) for dimension in dimensionOrder]
-			x = x[slices]
+			x = x[tuple(slices)]
 
 		# padding
 		if not (self.pad is None or self.pad == False):
@@ -390,7 +394,10 @@ class SpotStandardization(object):
 			std = numpy.reshape(numpy.percentile(centre, 75,axis=overAxes) - numpy.percentile(centre, 25,axis=overAxes),standardizerShape)
 		#x = (x-average) / std
 		x = x / std
-		return x
+		if std == 0.0:
+			return None
+		else:
+			return x
 
 
 class GlobalStandardization(SpotStandardization):
@@ -410,7 +417,10 @@ class GlobalStandardization(SpotStandardization):
 			std = numpy.reshape(numpy.percentile(x, 75,axis=overAxes) - numpy.percentile(x, 25,axis=overAxes),standardizerShape)
 		#x = (x - average) / std
 		x = x / std
-		return x
+		if std == 0.0:
+			return None
+		else:
+			return x
 
 
 
