@@ -1,5 +1,4 @@
 try:		# Tensorflow 2 stuff
-	import tensorflow.compat.v2 as tf2
 	import tensorflow.compat.v1 as tf
 	tf.disable_eager_execution()
 	if not hasattr(tf,'set_random_seed'): 
