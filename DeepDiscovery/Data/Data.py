@@ -84,6 +84,8 @@ class TrainingData(object):
 			examples = self.examples[numpy.random.choice(list(dataset),N,replace=False)]
 		try:
 			return self.preprocessExamples(copy.deepcopy(examples))
+		except KeyboardInterrupt:
+			logger.exception('Keyboard Interrupt')
 		except:
 			logger.exception('\n\nException preprocessing example. Retrying')
 			if specificExamples is None and retry:
