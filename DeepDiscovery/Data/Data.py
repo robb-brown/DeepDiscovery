@@ -85,7 +85,7 @@ class TrainingData(object):
 		try:
 			return self.preprocessExamples(copy.deepcopy(examples))
 		except KeyboardInterrupt:
-			logger.exception('Keyboard Interrupt')
+			raise KeyboardInterrupt
 		except:
 			logger.exception('\n\nException preprocessing example. Retrying')
 			if specificExamples is None and retry:
