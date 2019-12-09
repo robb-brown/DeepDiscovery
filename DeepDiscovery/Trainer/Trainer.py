@@ -158,7 +158,10 @@ class Trainer(DeepRoot.DeepRoot):
 			# -------------------  Inner training loop --------------------
 			for iteration in range(0,examplesPerEpoch):
 				example = self.examples.getTrainingExamples(trainingExamplesPerBatch)
-				result = self.trainOne(example,**trainArgs)
+				try:
+					result = self.trainOne(example,**trainArgs)
+				except:
+					logger.exception('Exception training on example {}'.format(self.examples.lastIndices))
 
 				t2 = time.time(); self.elapsed = t2-self.startTime;
 				if self.progressTracker is not None:
@@ -176,7 +179,7 @@ class Trainer(DeepRoot.DeepRoot):
 			epochTime = time.time() - epochT1
 			epochT1 = time.time()
 			try:
-				s = "After epoch {} validation: ".format(self.epoch) + ' | '.join(["{} = {:0.2g}".format(metric,result[metric]) for metric in result.keys() if not metric =='output'])
+				s = "After epoch {} validation: ".format(self.epoch) + ' | '.join(["{} = {:0.4g}".format(metric,result[metric]) for metric in result.keys() if not metric =='output'])
 				s += "  ({:0.1f} s / iteration)".format(epochTime/examplesPerEpoch)
 				logger.info(s)
 			except:
