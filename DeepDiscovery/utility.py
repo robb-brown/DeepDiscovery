@@ -3,6 +3,34 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+import psutil, time, subprocess
+
+class MemCheck():
+	
+	def __init__(self):
+		self.record = []
+	
+	def gpuCheck(self):
+		ret = subprocess.run('nvidia-smi',capture_output=True).stdout.decode().strip()
+		rec = {}
+		rec = ret
+		#ret = ret[-2].split()
+		#rec['gpu'] = float(ret[1])
+		#rec['mem'] = float(ret[-2].replace('MiB',''))
+		return rec
+	
+	def check(self,label=None):
+		sample = dict(time=time.time(),vmem=psutil.virtual_memory(),gpu=self.gpuCheck())
+		if not label is None:
+			sample['label'] = label
+		self.record.append(sample)
+		return sample
+	
+	def __call__(self,label=None):
+		return self.check(label=label)
+
+memcheck = MemCheck()
+
 
 # ----------------------------   Utility Functions  -----------------------------------
 def onlyMyArguments(function,args):
