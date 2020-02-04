@@ -1,4 +1,4 @@
-from .. tensorflowCompat import tf
+from tfextended.tensorflowCompat import tf
 import time, datetime, os, dill, numpy, sys, glob
 from collections import OrderedDict
 from .. import DeepRoot, Net, utility
@@ -161,20 +161,25 @@ class Trainer(DeepRoot.DeepRoot):
 				try:
 					result = self.trainOne(example,**trainArgs)
 				except:
-					logger.exception('Exception training on example {}'.format(self.examples.lastIndices))
+					try:
+						logger.exception('Exception training on example {}'.format(self.examples.lastIndices))
+					except:	
+						logger.exception('Exception training.')
 
 				t2 = time.time(); self.elapsed = t2-self.startTime;
+				lastIndices = self.examples.lastIndices if hasattr(self.examples,'lastIndices') else None
 				if self.progressTracker is not None:
-					self.progressTracker.update(example=example,epoch=self.epoch,iteration=iteration,elapsed=self.previouslyElapsed+self.elapsed,totalIterations=self.epoch*examplesPerEpoch+iteration,kind='Training',metrics=result)
+					self.progressTracker.update(example=example,exampleIndices=lastIndices,epoch=self.epoch,iteration=iteration,elapsed=self.previouslyElapsed+self.elapsed,totalIterations=self.epoch*examplesPerEpoch+iteration,kind='Training',metrics=result)
 				if self.elapsed > trainTime:
 					break
 
 			# -------------------  Validation --------------------
 			example = self.examples.getValidationExamples(validationExamplesPerBatch)
 			result = self.validate(example,**validateArgs)
+			lastIndices = self.examples.lastIndices if hasattr(self.examples,'lastIndices') else None
 
 			if self.progressTracker is not None:
-				self.progressTracker.update(example=example,epoch=self.epoch,iteration=iteration,elapsed=self.previouslyElapsed+self.elapsed,totalIterations=self.epoch*examplesPerEpoch+iteration,kind='Validation',metrics=result)
+				self.progressTracker.update(example=example,exampleIndices=lastIndices,epoch=self.epoch,iteration=iteration,elapsed=self.previouslyElapsed+self.elapsed,totalIterations=self.epoch*examplesPerEpoch+iteration,kind='Validation',metrics=result)
 			self.epoch += 1; t2 = time.time(); elapsed = t2-self.startTime;
 			epochTime = time.time() - epochT1
 			epochT1 = time.time()
@@ -200,8 +205,9 @@ class Trainer(DeepRoot.DeepRoot):
 
 		example = self.examples.getValidationExamples(validationExamplesPerBatch)
 		result = self.validate(example,**validateArgs)
+		lastIndices = self.examples.lastIndices if hasattr(self.examples,'lastIndices') else None
 		if self.progressTracker is not None:
-			self.progressTracker.update(example=example,epoch=self.epoch,iteration=iteration,elapsed=self.previouslyElapsed+self.elapsed,totalIterations=self.epoch*examplesPerEpoch+iteration,kind='Validation',metrics=result)
+			self.progressTracker.update(example=example,exampleIndices=lastIndices,epoch=self.epoch,iteration=iteration,elapsed=self.previouslyElapsed+self.elapsed,totalIterations=self.epoch*examplesPerEpoch+iteration,kind='Validation',metrics=result)
 
 
 	# Pickling support

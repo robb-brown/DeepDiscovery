@@ -1,4 +1,5 @@
-from . tensorflowCompat import tf
+from tfextended import tensorflowCompat as tensorflowCompat
+from tfextended.tensorflowCompat import tf
 import sys,traceback
 from . import utility
 from . import Data

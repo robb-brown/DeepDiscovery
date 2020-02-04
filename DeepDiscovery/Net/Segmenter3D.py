@@ -1,6 +1,6 @@
 from .UNet import UNet3D
 import numpy, random, math, time, dill, os, sys, copy
-from .. tensorflowCompat import tf
+from tfextended.tensorflowCompat import tf
 from collections import OrderedDict
 
 from .. import utility

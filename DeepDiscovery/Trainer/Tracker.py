@@ -36,12 +36,13 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		self.__dict__['modelParameters']['figures'] = {}
 		return self
 
-	def __init__(self,figures={},logPlots=True,plotEvery=1,basePath='./tracker',fileType='png',name=None,**plotArgs):
+	def __init__(self,figures={},logPlots=True,plotEvery=1,basePath='./tracker',fileType='png',metricsToRecord=['cost','jaccard'],name=None,**plotArgs):
 		self.name = name if name is not None else self.__class__.__name__
 		self.modelParameters['figures'] = figures
 		self.__dict__.update(dict(
 			trainingRecord = OrderedDict({'Training':[],'Validation':[]}),
 			performanceRecord = OrderedDict({'Training':{'elapsed':[]},'Validation':{'elapsed':[]}}),
+			metricsToRecord = metricsToRecord,
 			logPlots = logPlots,
 			plotArgs = dict(
 				alpha = 0.5,
@@ -58,25 +59,25 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		self.__dict__.update(args)
 
 	def update(self,forcePlot=False,**args):
-		metrics = args.get('metrics',{})
+		metrics = args.pop('metrics',{})
 		example = args.pop('example'); output = metrics.pop('output',None)
-		self.trainingRecord[args['kind']].append(args)
-		self.performanceRecord[args['kind']]['elapsed'].append(args['elapsed'])
 		for metric in metrics.keys():
 			self.performanceRecord[args['kind']][metric] = self.performanceRecord[args['kind']].get(metric,[])
 			self.performanceRecord[args['kind']][metric].append(metrics[metric])
+		
+		self.performanceRecord[args['kind']]['elapsed'].append(args['elapsed'])
+		self.trainingRecord[args['kind']].append(args)
 		display = self.counter % self.plotEvery == 0 or forcePlot
 		if display or args['kind'] == 'Validation':
-			self.plotMetrics(example,output,**args)
+			self.plotMetrics(example,output,metrics,**args)
 		self.counter +=1
 
-	def plotMetrics(self,example,output,display=True,**args):
+	def plotMetrics(self,example,output,metrics,display=True,**args):
 		if self.figures is None:
 			self.figures = dict()
 		os.makedirs(os.path.join(self.basePath,self.name),exist_ok=True)
 		if not output is None:
 			self.plotOutput(example,output,display=display,**args)
-		metrics = args.get('metrics',{})
 		for metric in metrics:
 			self.plotMetric(example,metric,display=display,**args)
 		pylab.pause(0.0000000001)
