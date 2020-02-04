@@ -88,6 +88,8 @@ class TrainingData(object):
 		self.lastIndices = indices
 		try:
 			return self.preprocessExamples(copy.deepcopy(examples))
+		except KeyboardInterrupt:
+			raise KeyboardInterrupt
 		except:
 			logger.exception('\n\nException preprocessing examples {}. Retrying'.format(indices))
 			if specificExamples is None and retry:
