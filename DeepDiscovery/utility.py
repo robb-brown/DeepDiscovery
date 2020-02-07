@@ -11,7 +11,7 @@ class MemCheck():
 		self.record = []
 	
 	def gpuCheck(self):
-		ret = subprocess.run('nvidia-smi',capture_output=True).stdout.decode().strip()
+		ret = subprocess.check_output('nvidia-smi').decode().strip()
 		rec = {}
 		rec = ret
 		#ret = ret[-2].split()
