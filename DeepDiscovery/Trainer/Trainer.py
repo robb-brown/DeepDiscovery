@@ -3,6 +3,12 @@ import time, datetime, os, dill, numpy, sys, glob
 from collections import OrderedDict
 from .. import DeepRoot, Net, utility
 import logging
+
+try:
+	from tensorflow_large_model_support import LMS
+except:
+	LMS = None
+
 logger = logging.getLogger(__name__)
 
 class CostFunction(DeepRoot.DeepRoot):
@@ -79,10 +85,21 @@ class Trainer(DeepRoot.DeepRoot):
 		self.setupMetrics()
 
 
-	def initializeTraining(self,):
+	def initializeTraining(self):
 		with tf.variable_scope(self.name):
 			self.modelParameters['costOp'] = self.cost.create()
+		with tf.variable_scope(self.name+'/trainOp'):
 			self.modelParameters['trainingStep'] = tf.train.AdamOptimizer(**self.trainingArguments).minimize(self.costOp)
+	
+	def runLMS(self,**args):
+		print('\n\n\n')
+		logger.info('********** Using LMS ***********')
+		optimizer_scopes = {self.name+'/trainOp'}
+		lms = LMS(optimizer_scopes,**args)
+		ops = lms.run(graph=tf.get_default_graph())
+		logger.info('LMS added {} ops'.format(len(ops)))
+		logger.info('*********************************')
+		print('\n\n\n')
 
 
 	def setupMetrics(self):
