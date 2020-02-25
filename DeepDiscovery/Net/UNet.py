@@ -26,8 +26,8 @@ def upsample(x,factor,dataFormat='channels_last',name='repeat'):
 
 
 
-def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropout=None,normalization=None,activation=tf.nn.relu,dimensions=3,skip=1.0):
-	init = tf.glorot_normal_initializer
+def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropout=None,normalization=None,activation=tf.nn.relu,dimensions=3,skip=1.0,initializer=None):
+	init = tf.glorot_normal_initializer if initializer is None else initializer
 	if dimensions == 2:
 		convDown = tf.layers.conv2d; convUp = tf.layers.conv2d_transpose; maxpoolF = tf.layers.max_pooling2d
 	else:

@@ -170,46 +170,53 @@ class Trainer(DeepRoot.DeepRoot):
 		self.startTime = time.time()
 		lastSave = self.elapsed
 		epochT1 = time.time()
+		terminate = False
 
-		while (self.epoch < epochs) or self.elapsed < trainTime:
+		while (not terminate) and ((self.epoch < epochs) or self.elapsed < trainTime):
 			# -------------------  Inner training loop --------------------
 			for iteration in range(0,examplesPerEpoch):
 				example = self.examples.getTrainingExamples(trainingExamplesPerBatch)
 				try:
-					result = self.trainOne(example,**trainArgs)
-				except:
+					result = self.trainOne(example,**trainArgs)					
+				except Exception:
 					try:
 						logger.exception('Exception training on example {}'.format(self.examples.lastIndices))
 					except:	
 						logger.exception('Exception training.')
+				except:
+					logger.warning('Training interrupted by keyboard or system event.')
+					terminate = True
+					break
+					
 
 				t2 = time.time(); self.elapsed = t2-self.startTime;
 				lastIndices = self.examples.lastIndices if hasattr(self.examples,'lastIndices') else None
 				if self.progressTracker is not None:
 					self.progressTracker.update(example=example,exampleIndices=lastIndices,epoch=self.epoch,iteration=iteration,elapsed=self.previouslyElapsed+self.elapsed,totalIterations=self.epoch*examplesPerEpoch+iteration,kind='Training',metrics=result)
-				if self.elapsed > trainTime:
+				if terminate or (self.elapsed > trainTime):
 					break
 
 			# -------------------  Validation --------------------
-			example = self.examples.getValidationExamples(validationExamplesPerBatch)
-			result = self.validate(example,**validateArgs)
-			lastIndices = self.examples.lastIndices if hasattr(self.examples,'lastIndices') else None
+			if not terminate:
+				example = self.examples.getValidationExamples(validationExamplesPerBatch)
+				result = self.validate(example,**validateArgs)
+				lastIndices = self.examples.lastIndices if hasattr(self.examples,'lastIndices') else None
 
-			if self.progressTracker is not None:
-				self.progressTracker.update(example=example,exampleIndices=lastIndices,epoch=self.epoch,iteration=iteration,elapsed=self.previouslyElapsed+self.elapsed,totalIterations=self.epoch*examplesPerEpoch+iteration,kind='Validation',metrics=result)
-			self.epoch += 1; t2 = time.time(); elapsed = t2-self.startTime;
-			epochTime = time.time() - epochT1
-			epochT1 = time.time()
-			try:
-				s = "After epoch {} validation: ".format(self.epoch) + ' | '.join(["{} = {:0.4g}".format(metric,result[metric]) for metric in result.keys() if not metric =='output'])
-				s += "  ({:0.1f} s / iteration)".format(epochTime/examplesPerEpoch)
-				logger.info(s)
-			except:
-				s = "After epoch {} validation: ".format(self.epoch) + ' | '.join(["{} = {}".format(metric,result[metric]) for metric in result.keys() if not metric =='output'])
-				s += "  ({:0.1f} s / iteration)".format(epochTime/examplesPerEpoch)
-				logger.info(s)
+				if self.progressTracker is not None:
+					self.progressTracker.update(example=example,exampleIndices=lastIndices,epoch=self.epoch,iteration=iteration,elapsed=self.previouslyElapsed+self.elapsed,totalIterations=self.epoch*examplesPerEpoch+iteration,kind='Validation',metrics=result)
+				self.epoch += 1; t2 = time.time(); elapsed = t2-self.startTime;
+				epochTime = time.time() - epochT1
+				epochT1 = time.time()
+				try:
+					s = "After epoch {} validation: ".format(self.epoch) + ' | '.join(["{} = {:0.4g}".format(metric,result[metric]) for metric in result.keys() if not metric =='output'])
+					s += "  ({:0.1f} s / iteration)".format(epochTime/examplesPerEpoch)
+					logger.info(s)
+				except:
+					s = "After epoch {} validation: ".format(self.epoch) + ' | '.join(["{} = {}".format(metric,result[metric]) for metric in result.keys() if not metric =='output'])
+					s += "  ({:0.1f} s / iteration)".format(epochTime/examplesPerEpoch)
+					logger.info(s)
 
-			if saveEvery and self.elapsed-lastSave > saveEvery*3600:
+			if (not terminate) and (saveEvery and self.elapsed-lastSave > saveEvery*3600):
 				totalElapsed = self.previouslyElapsed + self.elapsed
 				elapsedModifier,elapsedUnits = (1.,'s') if totalElapsed < 60*5 \
 					else (1./60,'m') if totalElapsed < 3600*2 \

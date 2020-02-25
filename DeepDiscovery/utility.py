@@ -1,5 +1,6 @@
 import numpy
 import logging
+from tfextended import tf
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +64,11 @@ def computePadOld(dims,depth,mode='2d',shape=None):
 	return z,y,x,z1,z2,y1,y2,x1,x2
 
 
-def computePad(dims,depth,shape=None):
+def computePad(dims,depth=None,shape=None):
+	""" Dims are the dimensions of the image, depth is the depth of the factor-of-two downsampling conv net,
+		shape is the target dimensions. If shape is not provided, it is computed as the shape required to
+		satisfy depth. Either depth or shape must be supplied.
+		Returned is the new shape, and the required left and right padding."""
 	dims1 = numpy.zeros(len(dims)); dims2 = numpy.zeros(len(dims))
 	if shape is None:
 		shape = [float(numpy.ceil(dims[i]/float(2**depth)) * (2**depth)) for i in range(len(dims))]
@@ -95,7 +100,7 @@ def padImage(img,depth,mode='2d',spatialAxes=[0,1,2],shape=None,oneHot=False):
 
 
 def depadImage(img,originalShape,spatialAxes=[0,1,2]):
-	dims = numpy.array(img.shape)
+	dims = numpy.array(img.shape) if not isinstance(img,tf.Tensor) else numpy.array([d.value for d in img.shape])
 	slices = list(numpy.repeat(slice(None),len(img.shape)))
 	for dim in spatialAxes:
 		d = (dims[dim] - originalShape[dim])/2

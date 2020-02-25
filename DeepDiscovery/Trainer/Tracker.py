@@ -36,7 +36,7 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		self.__dict__['modelParameters']['figures'] = {}
 		return self
 
-	def __init__(self,figures={},logPlots=True,plotEvery=1,basePath='./tracker',fileType='png',metricsToRecord=['cost','jaccard'],name=None,**plotArgs):
+	def __init__(self,figures={},logPlots=True,plotEvery=1,basePath='./tracker',fileType='png',metricsToRecord=['cost','jaccard'],name=None,grid=False,**plotArgs):
 		self.name = name if name is not None else self.__class__.__name__
 		self.modelParameters['figures'] = figures
 		self.__dict__.update(dict(
@@ -44,6 +44,7 @@ class ProgressTracker(DeepRoot.DeepRoot):
 			performanceRecord = OrderedDict({'Training':{'elapsed':[]},'Validation':{'elapsed':[]}}),
 			metricsToRecord = metricsToRecord,
 			logPlots = logPlots,
+			grid = grid,
 			plotArgs = dict(
 				alpha = 0.5,
 				marker='o',
@@ -105,6 +106,8 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		if len(validateElapsed) > 0:
 			plotFunction(validateElapsed*elapsedModifier,validateMetric,color='g',label='Validation',**self.plotArgs);
 
+		if self.grid:
+			axis.grid(True)
 		axis.set_xlabel('Elapsed Time (%s)' % elapsedUnits)
 		axis.set_ylabel(metric.title())
 		axis.legend(loc='best')
@@ -118,6 +121,9 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		if len(validateElapsed) > 0:
 			start = numpy.argmin(numpy.abs(validateElapsed-trainElapsed[start]))
 			plotFunction(validateElapsed[start:]*elapsedModifier,validateMetric[start:],color='g',label='Validation',**self.plotArgs);
+
+		if self.grid:
+			axis.grid(True)
 		axis.set_xlabel('Elapsed Time (%s)' % elapsedUnits)
 		axis.set_ylabel(metric.title())
 		axis.legend(loc='best')
