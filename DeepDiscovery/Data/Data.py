@@ -272,7 +272,6 @@ class ImagePreprocessor(object):
 		dimensionOrder = copy.deepcopy(dimensionOrder)
 		standardize = False if oneHot else self.standardize if standardize is None else standardize
 
-
 		# Cropping
 		if not (self.crop is None or self.crop == False):
 			slices = [slice(*self.crop.get(dimension,[None])) for dimension in dimensionOrder]
@@ -396,7 +395,7 @@ class SpotStandardization(object):
 			std = numpy.reshape(numpy.percentile(centre, 75,axis=overAxes) - numpy.percentile(centre, 25,axis=overAxes),standardizerShape)
 		#x = (x-average) / std
 		x = x / std
-		if std == 0.0:
+		if 0.0 in std:
 			return None
 		else:
 			return x

@@ -26,7 +26,7 @@ def upsample(x,factor,dataFormat='channels_last',name='repeat'):
 
 
 
-def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropout=None,normalization=None,activation=tf.nn.relu,dimensions=3,skip=1.0,initializer=None):
+def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,preLayers=0,dropout=None,normalization=None,activation=tf.nn.relu,dimensions=3,skip=1.0,initializer=None):
 	init = tf.glorot_normal_initializer if initializer is None else initializer
 	if dimensions == 2:
 		convDown = tf.layers.conv2d; convUp = tf.layers.conv2d_transpose; maxpoolF = tf.layers.max_pooling2d
@@ -47,16 +47,16 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 	stride = 1 if maxpool else 2
 	layerThickness = 1 if layerThickness < 1 else layerThickness
 	net = input
-	# Robb DEBUG: see if this helps eye fat segmentation
-	# net = convDown(	inputs=net,
-	# 				filters=filterPlan[0],
-	# 				kernel_size=filterSize,
-	# 				strides = 1,
-	# 				padding='same',
-	# 				activation = activation,
-	# 				kernel_initializer = init,
-	# 				data_format='channels_last',
-	# 				name = 'UNet-Initial')
+	for pl in range(0,preLayers):
+		net = convDown(	inputs=net,
+						filters=filterPlanDown[0],
+						kernel_size=filterSize,
+						strides = 1,
+						padding='same',
+						activation = activation,
+						kernel_initializer = init,
+						data_format='channels_last',
+						name = 'UNet-preLayer{}'.format(pl+1)); layers[net.name] = net
 
 	downLayers.append(net)
 	for level,nFilters in enumerate(filterPlanDown):
@@ -152,7 +152,7 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,dropou
 
 class UNet2D(Net):
 
-	def __init__(self,dimensions=None,inputChannels=1,filterPlan=[10,20,30,40,50],filterSize=(5,5),layerThickness=1,postUDepth=2,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=None,name=None,fname=None,skipChannels=1.0,**args):
+	def __init__(self,dimensions=None,inputChannels=1,filterPlan=[10,20,30,40,50],filterSize=(5,5),layerThickness=1,postUDepth=2,preLayers=0,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=None,name=None,fname=None,skipChannels=1.0,**args):
 		dimensions = (None,None,inputChannels) if dimensions is None else dimensions
 		if not isinstance(filterPlan,dict):
 			filterPlan = dict(down=filterPlan,up=filterPlan[::-1])
@@ -163,6 +163,7 @@ class UNet2D(Net):
 										filterSize = filterSize,
 										layerThickness = layerThickness,
 										postUDepth = postUDepth,
+										preLayers = preLayers,
 										maxpool = maxpool,
 										normalization = normalization,
 										nonlinearity = nonlinearity,
@@ -217,7 +218,7 @@ class UNet2D(Net):
 			if self.inputNoise:
 				net = self.addLayer(tf.reshape(net + tf.random_normal(shape=tf.shape(net), mean=0.0, stddev=self.inputNoiseSigma, dtype='float'),tf.shape(net),name='InputNoise'));
 
-			net,ulayers = uNet(net,filterPlan = self.filterPlan,filterSize = self.filterSize,maxpool=self.maxpool,layerThickness=self.layerThickness,normalization=self.normalization,dimensions=2,skip=self.skipChannels);
+			net,ulayers = uNet(net,filterPlan = self.filterPlan,filterSize = self.filterSize,preLayers=self.preLayers,maxpool=self.maxpool,layerThickness=self.layerThickness,normalization=self.normalization,dimensions=2,skip=self.skipChannels);
 			self.layers.update(ulayers)
 			for i in range(self.postUDepth):
 				net = self.addLayer(tf.layers.conv2d(	inputs=net,
@@ -259,7 +260,7 @@ class UNet2D(Net):
 
 class UNet3D(Net):
 
-	def __init__(self,dimensions=None,inputChannels=1,filterPlan=[10,20,30,40,50],filterSize=5,layerThickness=1,postUDepth=2,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=None,name=None,fname=None,skipChannels=1.0,**args):
+	def __init__(self,dimensions=None,inputChannels=1,filterPlan=[10,20,30,40,50],filterSize=5,layerThickness=1,postUDepth=2,preLayers=0,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=None,name=None,fname=None,skipChannels=1.0,**args):
 		dimensions = (None,None,None,inputChannels) if dimensions is None else dimensions
 		if not isinstance(filterPlan,dict):
 			filterPlan = dict(down=filterPlan,up=filterPlan[::-1])
@@ -270,6 +271,7 @@ class UNet3D(Net):
 										filterSize = filterSize,
 										layerThickness = layerThickness,
 										postUDepth = postUDepth,
+										preLayers = preLayers,
 										maxpool = maxpool,
 										normalization = normalization,
 										nonlinearity = nonlinearity,
@@ -294,6 +296,11 @@ class UNet3D(Net):
 	def create(self):
 		"""Override this method to customize your model"""
 		init = tf.glorot_normal_initializer
+		
+		# update old models
+		if not 'preLayers' in self.hyperParameters:
+			self.hyperParameters['preLayers'] = 0
+		
 		
 		# for compatability with older saved models
 		if not isinstance(self.filterPlan,dict):
@@ -325,7 +332,7 @@ class UNet3D(Net):
 				#logger.info('Using input noise')
 				net = self.addLayer(tf.reshape(net + tf.random_normal(shape=tf.shape(net), mean=0.0, stddev=self.inputNoiseSigma, dtype='float'),tf.shape(net),name='inputNoise'))
 
-			net,ulayers = uNet(net,filterPlan = self.filterPlan,filterSize = self.filterSize,maxpool=self.maxpool,layerThickness=self.layerThickness,normalization=self.normalization,dimensions=3,skip=self.skipChannels)
+			net,ulayers = uNet(net,filterPlan = self.filterPlan,filterSize = self.filterSize,preLayers=self.preLayers,maxpool=self.maxpool,layerThickness=self.layerThickness,normalization=self.normalization,dimensions=3,skip=self.skipChannels)
 			self.layers.update(ulayers)
 			for i in range(self.postUDepth):				
 				net = self.addLayer(tf.layers.conv3d(	inputs=net,
