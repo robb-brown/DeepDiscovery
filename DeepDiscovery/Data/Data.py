@@ -3,6 +3,7 @@ import math, copy, sys, time, datetime, os
 import nibabel as nib
 from collections import OrderedDict
 import dill
+from numba import jit
 
 from .. import utility
 
@@ -30,8 +31,7 @@ class TrainingData(object):
 				self.trainSet,self.testSet,self.validationSet,self.classes = self.allocateExamples(self.examples,reserveForValidation=reserveForValidation,reserveForTest=reserveForTest,balanceClasses=balanceClasses)
 				_ = [example.update({'status' : 'train' if i in self.trainSet else 'test' if i in self.testSet else 'validation'}) for i,example in enumerate(self.examples)]
 			else:
-				allocation = numpy.array([1 if ex['status'] == 'validation' else 2 if ex['status'] == 'test' else 0 for ex in self.examples])
-				self.trainSet = numpy.where(allocation==0)[0]; self.validationSet = numpy.where(allocation==1)[0]; self.testSet = numpy.where(allocation==2)[0]
+				self.computeAllocationFromExamples()
 		else:
 			# We've got tuples or lists, not dictionaries
 			self.trainSet,self.testSet,self.validationSet,self.classes = self.allocateExamples(self.examples,reserveForValidation=reserveForValidation,reserveForTest=reserveForTest,balanceClasses=balanceClasses)
@@ -70,6 +70,9 @@ class TrainingData(object):
 		trainSet = allocation
 		return trainSet,testSet,validationSet,classes
 
+	def computeAllocationFromExamples(self):
+		allocation = numpy.array([1 if ex['status'] == 'validation' else 2 if ex['status'] == 'test' else 0 for ex in self.examples])
+		self.trainSet = numpy.where(allocation==0)[0]; self.validationSet = numpy.where(allocation==1)[0]; self.testSet = numpy.where(allocation==2)[0]
 
 	def getExamples(self,dataset,N=1,balanceClasses=None,specificExamples = None,retry=True):
 		balanceClasses = balanceClasses if balanceClasses is not None else self.balanceClasses
@@ -425,7 +428,6 @@ class GlobalStandardization(SpotStandardization):
 
 
 
-
 class EdgeBiasedAttention(object):
 	def __init__(self,edgeFalloff=10,background=0.01,approximate=True,balanceClasses=True,gentleBalance=10.0):
 		self.edgeFalloff = edgeFalloff; self.background = background;
@@ -433,13 +435,15 @@ class EdgeBiasedAttention(object):
 		self.balanceClasses = balanceClasses; self.gentleBalance = gentleBalance
 
 	def generate(self,example):
-		y = numpy.around(example['truth'][...,0]).astype(numpy.uint8)
+		y = numpy.around(example['truth']).astype(numpy.uint8)
 		if self.approximate:
-			dist1 = scipy.ndimage.distance_transform_cdt(y[0])
-			dist2 = scipy.ndimage.distance_transform_cdt(numpy.where(y>0,0,1))
+			dist1 = numpy.array([scipy.ndimage.distance_transform_cdt(y[0,...,x]) for x in range(y.shape[-1])]).transpose([1,2,3,0])
+			dist2 = 1-y
+			dist2 = numpy.array([scipy.ndimage.distance_transform_cdt(dist2[0,...,x]) for x in range(dist2.shape[-1])]).transpose([1,2,3,0])
 		else:
-			dist1 = scipy.ndimage.distance_transform_edt(y, sampling=[1,1,1])
-			dist2 = scipy.ndimage.distance_transform_edt(numpy.where(y>0,0,1), sampling=[1,1,1])
+			dist1 = numpy.array([scipy.ndimage.distance_transform_edt(y[0,...,x]) for x in range(y.shape[-1])]).transpose([1,2,3,0],sampling=[1,1,1])
+			dist2 = 1-y
+			dist2 = numpy.array([scipy.ndimage.distance_transform_edt(dist2[0,...,x]) for x in range(dist2.shape[-1])]).transpose([1,2,3,0],sampling=[1,1,1])
 		dist = dist1+dist2
 		attention = math.e**(1-dist/float(self.edgeFalloff)) + self.background
 		if self.balanceClasses:
@@ -452,5 +456,9 @@ class EdgeBiasedAttention(object):
 		attention /= numpy.average(attention)
 		#print "achieved class balance is %0.2f" % (numpy.sum(attention*(1.0-y)) / numpy.sum(attention*y))
 		attention = numpy.reshape(attention,y.shape)
-		attention = numpy.expand_dims(attention,-1)
+		#attention = numpy.expand_dims(attention,-1)
 		return attention
+
+
+
+

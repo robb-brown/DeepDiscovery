@@ -175,9 +175,13 @@ class Trainer(DeepRoot.DeepRoot):
 		while (not terminate) and ((self.epoch < epochs) or self.elapsed < trainTime):
 			# -------------------  Inner training loop --------------------
 			for iteration in range(0,examplesPerEpoch):
+				#x1 = time.time()
 				example = self.examples.getTrainingExamples(trainingExamplesPerBatch)
 				try:
-					result = self.trainOne(example,**trainArgs)					
+					#x2 = time.time()
+					result = self.trainOne(example,**trainArgs)
+					#x3 = time.time()
+					#logger.info('Getting examples took {} s. Training took {} s.'.format(x2-x1,x3-x2))
 				except Exception:
 					try:
 						logger.exception('Exception training on example {}'.format(self.examples.lastIndices))

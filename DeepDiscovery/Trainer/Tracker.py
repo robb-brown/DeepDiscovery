@@ -115,12 +115,12 @@ class ProgressTracker(DeepRoot.DeepRoot):
 		# Plot the most recent record of the metric
 		self.figures[metric+'Detail'].clf(); axis = self.figures[metric+'Detail'].add_subplot(111); 
 		plotFunction = axis.semilogy if args.get('logPlots',self.logPlots) else axis.plot
-		if len(trainElapsed) > 0:
-			start = int(round(len(trainElapsed)*0.9)) #if len(trainElapsed) <= 500 else -500;
+		if len(trainElapsed) > 100:
+			start = int(round(len(trainElapsed)*0.9))
 			plotFunction(trainElapsed[start:]*elapsedModifier,trainMetric[start:],color='b',label='Training',**self.plotArgs);
-		if len(validateElapsed) > 0:
-			start = numpy.argmin(numpy.abs(validateElapsed-trainElapsed[start]))
-			plotFunction(validateElapsed[start:]*elapsedModifier,validateMetric[start:],color='g',label='Validation',**self.plotArgs);
+			if len(validateElapsed) > 0:
+				start = numpy.argmin(numpy.abs(validateElapsed-trainElapsed[start])) 
+				plotFunction(validateElapsed[start:]*elapsedModifier,validateMetric[start:],color='g',label='Validation',**self.plotArgs);
 
 		if self.grid:
 			axis.grid(True)
