@@ -146,6 +146,7 @@ def convertToOneHot(y,coding=[0,1],gentleCoding=True):
 	# 	y *= gentleCoding
 	# 	y += (y == 0) * (1-gentleCoding)
 	
+	import pudb; pu.db
 	if 0 in coding:
 		coding.remove(0)
 	y = numpy.sum([numpy.where(y==code,c+1,0) for c,code in enumerate(coding)],axis=0)
@@ -154,7 +155,7 @@ def convertToOneHot(y,coding=[0,1],gentleCoding=True):
 	gentleCoding = 0.9 if gentleCoding is True else gentleCoding
 	if gentleCoding:
 		codingMatrix *= gentleCoding
-		codingMatrix += (codingMatrix == 0) * (1-gentleCoding)
+		codingMatrix += (codingMatrix == 0) * ((1-gentleCoding) / (len(coding)-1))
 	y = codingMatrix[y]
 	return y
 
