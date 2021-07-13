@@ -1,13 +1,13 @@
 import DeepDiscovery as dd
-import tensorflow as tf
+from DeepDiscovery import tf
 import nibabel as nib
 import numpy
+import sys
 
 session = tf.InteractiveSession()
 
-modelPath = 'models/BrainExtraction2d.net'
-#modelPath = 'models/OcularFat2d.net'
-dataPath = 'tal_sub-A00028185_ses-NFB3_t1w.mnc.004.mnc'
+modelPath = sys.argv[1]
+dataPath = sys.argv[2]
 
 net = dd.Net.Net.load(modelPath)
 image = nib.load(dataPath)
