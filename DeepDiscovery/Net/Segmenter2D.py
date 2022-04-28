@@ -43,12 +43,4 @@ class Segmenter2D(UNet2D):
 		segmentation = self.preprocessor.restore(segmentation,originalShape=originalShape,dimensionOrder=requiredDimensionOrder,requiredDimensionOrder=requiredDimensionOrder)
 		return segmentation
 
-	def preprocessInput(self,example,dimensionOrder=None):
-		dimensionOrder = example.get('dimensionOrder',None) if dimensionOrder is None else dimensionOrder
-		ret = dict(); ret.update(example);
-		ret['input'] = self.preprocessor.process(example['input'],dimensionOrder=dimensionOrder)
-		if 'truth' in example:
-			ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder,oneHot=True)
-		if 'attention' in example:
-			ret['attention'] = self.preprocessor.process(example['attention'],standardize=False)
-		return ret
+

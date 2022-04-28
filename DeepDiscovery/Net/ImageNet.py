@@ -45,5 +45,8 @@ class ImageNet(Net):
 		ret = dict(); ret.update(example);
 		ret['input'] = self.preprocessor.process(example['input'],dimensionOrder=dimensionOrder)
 		if 'truth' in example:
-			ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder)
+			ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder,oneHot=True)
+		if ('attention' in example):
+			ret['attention'] = self.preprocessor.process(example['attention'],dimensionOrder=dimensionOrder,standardize=False)
+		ret['dimensionOrder'] = self.preprocessor.requiredDimensionOrder
 		return ret

@@ -152,7 +152,7 @@ def uNet(input,filterPlan,filterSize=(5,5),maxpool=False,layerThickness=1,preLay
 
 class UNet2D(Net):
 
-	def __init__(self,dimensions=None,inputChannels=1,filterPlan=[10,20,30,40,50],filterSize=(5,5),layerThickness=1,postUDepth=2,preLayers=0,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=None,name=None,fname=None,skipChannels=1.0,**args):
+	def __init__(self,dimensions=None,inputChannels=1,filterPlan=[10,20,30,40,50],filterSize=(5,5),layerThickness=1,postUDepth=2,preLayers=0,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=None,preprocessorArgs={},name=None,fname=None,skipChannels=1.0,**args):
 		dimensions = (None,None,inputChannels) if dimensions is None else dimensions
 		if not isinstance(filterPlan,dict):
 			filterPlan = dict(down=filterPlan,up=filterPlan[::-1])
@@ -181,6 +181,7 @@ class UNet2D(Net):
 												standardize = self.standardize,
 												pad = len(self.filterPlan['down']),
 												mode = '2d',
+												**preprocessorArgs,
 												)
 		super().__init__(fname=fname,name=name)
 
@@ -250,7 +251,10 @@ class UNet2D(Net):
 		ret = dict(); ret.update(example);
 		ret['input'] = self.preprocessor.process(example['input'],dimensionOrder=dimensionOrder)
 		if 'truth' in example:
-			ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder)
+			ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder,oneHot=True)
+		if ('attention' in example):
+			ret['attention'] = self.preprocessor.process(example['attention'],dimensionOrder=dimensionOrder,standardize=False)
+		ret['dimensionOrder'] = self.preprocessor.requiredDimensionOrder
 		return ret
 
 
@@ -260,7 +264,7 @@ class UNet2D(Net):
 
 class UNet3D(Net):
 
-	def __init__(self,dimensions=None,inputChannels=1,filterPlan=[10,20,30,40,50],filterSize=5,layerThickness=1,postUDepth=2,preLayers=0,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=None,name=None,fname=None,skipChannels=1.0,**args):
+	def __init__(self,dimensions=None,inputChannels=1,filterPlan=[10,20,30,40,50],filterSize=5,layerThickness=1,postUDepth=2,preLayers=0,maxpool=False,normalization=None,nonlinearity=tf.nn.relu,inputDropout=False,inputNoise=False,internalDropout=False,gentleCoding=0.9,standardize=None,preprocessorArgs={},name=None,fname=None,skipChannels=1.0,**args):
 		dimensions = (None,None,None,inputChannels) if dimensions is None else dimensions
 		if not isinstance(filterPlan,dict):
 			filterPlan = dict(down=filterPlan,up=filterPlan[::-1])
@@ -289,6 +293,7 @@ class UNet3D(Net):
 												standardize = self.standardize,
 												pad = len(self.filterPlan['down']),
 												mode = '3d',
+												**preprocessorArgs,
 												)
 		super().__init__(fname=fname,name=name)
 
@@ -364,5 +369,9 @@ class UNet3D(Net):
 		ret = dict(); ret.update(example);
 		ret['input'] = self.preprocessor.process(example['input'],dimensionOrder=dimensionOrder)
 		if 'truth' in example:
-			ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder)
+			ret['truth'] = self.preprocessor.process(example['truth'],dimensionOrder=dimensionOrder,oneHot=True)
+		if ('attention' in example):
+			ret['attention'] = self.preprocessor.process(example['attention'],dimensionOrder=dimensionOrder,standardize=False)
+		ret['dimensionOrder'] = self.preprocessor.requiredDimensionOrder
 		return ret
+

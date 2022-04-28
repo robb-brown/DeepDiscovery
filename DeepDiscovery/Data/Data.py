@@ -143,7 +143,7 @@ class TrainingData(object):
 
 class ImageTrainingData(TrainingData):
 
-	def __init__(self,examples,reserveForValidation=0.1,reserveForTest=0.1,truth=None,truthChannels=None,truthComponents=None,inputChannels=None,gentleCoding=0.9,balanceClasses=False,attention=None,basepath=None):
+	def __init__(self,examples,reserveForValidation=0.1,reserveForTest=0.1,truth=None,truthChannels=None,truthComponents=None,inputChannels=None,randomSlices=None,gentleCoding=0.9,balanceClasses=False,attention=None,basepath=None):
 		super(ImageTrainingData,self).__init__(examples,reserveForValidation,reserveForTest)
 		self.basepath = basepath
 		self.truth = truth
@@ -152,9 +152,11 @@ class ImageTrainingData(TrainingData):
 		self.inputChannels = inputChannels
 		self.gentleCoding = gentleCoding
 		self.attention = attention
+		self.randomSlices = randomSlices
 
 
 	def preprocessExamples(self,examples,inputChannels=None):
+		dimensionOrder = ['b','x','y','z','c']
 		self.truthChannels = None if not 'truthChannels' in self.__dict__ else self.truthChannels
 		basepath = self.__dict__.get('basepath',os.path.dirname(self.__dict__.get('fname','')))
 		basepath = os.path.dirname(self.__dict__.get('fname','')) if basepath is None else basepath
@@ -205,8 +207,16 @@ class ImageTrainingData(TrainingData):
 			xs.append(x); ys.append(y)
 
 		x = numpy.array(xs); y = numpy.array(ys)
+		
+		if self.randomSlices:
+			slicer = [slice(None) for d in dimensionOrder]
+			for dim in self.randomSlices.keys():
+				d = dimensionOrder.index(dim)
+				slicer[d] = sorted(numpy.random.choice(numpy.arange(x.shape[d]),self.randomSlices[dim]))
+			x = x[slicer]
+			y = y[slicer]
 
-		example = dict(input=x,truth=y,dimensionOrder=['b','x','y','z','c'])
+		example = dict(input=x,truth=y,dimensionOrder=dimensionOrder)
 		if numpy.all(y==None):
 			_ = example.pop('truth')
 
@@ -255,7 +265,7 @@ class PandasData(TrainingData):
 
 class ImagePreprocessor(object):
 
-	def __init__(self,dimensionOrder=['b','z','y','x','c'],requiredDimensionOrder=None,crop=None,standardize=None,pad=None,mode='3d'):
+	def __init__(self,dimensionOrder=['b','z','y','x','c'],requiredDimensionOrder=None,crop=None,standardize=None,pad=None,clamp=(0,None),mode='3d'):
 		"""
 			crop is a dictionary with keys that are single character dimension codes and values are
 				arguments to slice() (start, end, [step]).
@@ -268,6 +278,7 @@ class ImagePreprocessor(object):
 		"""
 		self.dimensionOrder = dimensionOrder; self.requiredDimensionOrder = requiredDimensionOrder;
 		self.crop = crop; self.standardize=standardize; self.pad = pad; self.mode = mode
+		self.clamp = clamp
 
 
 	def process(self,x,dimensionOrder=None,requiredDimensionOrder=None,standardize=None,oneHot=False):
@@ -289,6 +300,10 @@ class ImagePreprocessor(object):
 				x = utility.padImage(x,depth=self.pad,mode=None,spatialAxes=spatialAxes,oneHot=oneHot)
 			else:
 				x = utility.padImage(x,mode=None,shape=self.pad,spatialAxes=spatialAxes,oneHot=oneHot)
+		
+		# clamping
+		if not (self.clamp is None or self.clamp == False):
+			x = x.clip(self.clamp[0],self.clamp[1])
 
 		# standardization
 		if not (standardize is None or standardize == False):
