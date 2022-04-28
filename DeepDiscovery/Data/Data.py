@@ -4,6 +4,7 @@ import nibabel as nib
 from collections import OrderedDict
 import dill
 from numba import jit
+import MedicalImage
 
 from .. import utility
 
@@ -169,7 +170,8 @@ class ImageTrainingData(TrainingData):
 			else:
 				truthChannels = None
 			if not truthChannels is None:
-				y = numpy.array([nib.load(os.path.join(basepath,example[channel])).get_data() for channel in truthChannels])
+				#y = numpy.array([nib.load(os.path.join(basepath,example[channel])).get_data() for channel in truthChannels])
+				y = numpy.array([MedicalImage.MedicalImage(os.path.join(basepath,example[channel])).data for channel in truthChannels])
 				normalizer = numpy.sum(y,axis=0); normalizer = numpy.where(normalizer>1.0,normalizer,1.0)
 				y = y / normalizer
 				y0 = numpy.expand_dims(1.0-numpy.sum(y,axis=0),axis=0)
@@ -177,7 +179,7 @@ class ImageTrainingData(TrainingData):
 				y = y.transpose(list(range(1,len(y.shape)))+[0])
 			elif not self.truth is None or 'truth' in example:
 				truth = example.get(self.truth) if not self.truth is None else example.get(example['truth'],example['truth'])
-				y = nib.load(os.path.join(basepath,truth)).get_data()
+				y = MedicalImage.MedicalImage(os.path.join(basepath,truth)).data
 				y = numpy.expand_dims(y,-1)
 				# Convert y to one hot
 				if not self.truthComponents is None:
@@ -188,10 +190,10 @@ class ImageTrainingData(TrainingData):
 
 			inputChannels = inputChannels if not inputChannels is None else self.inputChannels if not self.__dict__.get('inputChannels',None) is None else example.get('inputChannels',None) if 'inputChannels' in example else None
 			if not inputChannels is None:
-				x = numpy.array([nib.load(os.path.join(basepath,example[channel])).get_data() for channel in inputChannels])
+				x = numpy.array([MedicalImage.MedicalImage(os.path.join(basepath,example[channel])).data for channel in inputChannels])
 				x = x.transpose(list(range(1,len(x.shape)))+[0])
 			else:
-				x = nib.load(os.path.join(basepath,example['input'])).get_data()
+				x = MedicalImage.MedicalImage(os.path.join(basepath,example['input'])).data
 				x = numpy.expand_dims(x,-1)
 
 			t2 = time.time()
@@ -204,7 +206,7 @@ class ImageTrainingData(TrainingData):
 
 		x = numpy.array(xs); y = numpy.array(ys)
 
-		example = dict(input=x,truth=y,dimensionOrder=['b','z','y','x','c'])
+		example = dict(input=x,truth=y,dimensionOrder=['b','x','y','z','c'])
 		if numpy.all(y==None):
 			_ = example.pop('truth')
 
