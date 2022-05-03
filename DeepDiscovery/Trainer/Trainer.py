@@ -89,8 +89,11 @@ class Trainer(DeepRoot.DeepRoot):
 		with tf.variable_scope(self.name):
 			self.modelParameters['costOp'] = self.cost.create()
 		with tf.variable_scope(self.name+'/trainOp'):
-			self.modelParameters['trainingArguments'] = {k:tf.Variable(v) if k == 'learning_rate' else v for k,v in self.trainingArguments.items()}
-			self.modelParameters['trainingStep'] = tf.train.AdamOptimizer(**self.modelParameters['trainingArguments']).minimize(self.costOp)
+			trainingArgs = dict(**self.trainingArguments)
+			learningRate = trainingArgs.pop('learning_rate',1e-3)
+			self.__dict__['learningRate'] = tf.Variable(learningRate)
+			self.learningRate.assign(learningRate).eval()
+			self.modelParameters['trainingStep'] = tf.train.AdamOptimizer(learning_rate=self.learningRate,**trainingArgs).minimize(self.costOp)
 	
 	def runLMS(self,**args):
 		print('\n\n\n')
@@ -135,6 +138,9 @@ class Trainer(DeepRoot.DeepRoot):
 						metrics[metric] = jaccard
 			self.metrics = metrics
 
+	def setLearningRate(self,learningRate):
+		self.learningRate.assign(learningRate).eval()
+		self.trainingArguments['learning_rate'] = learningRate
 
 	def trainOne(self,examples=None,N=1,**args):
 		if examples is None:
