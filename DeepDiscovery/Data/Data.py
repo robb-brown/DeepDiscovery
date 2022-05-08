@@ -295,7 +295,7 @@ class ImagePreprocessor(object):
 
 		# padding
 		if not (self.pad is None or self.pad == False):
-			spatialAxes = [dimensionOrder.index(d) for d in (['y','x'] if self.mode == '2d' else ['z','y','x']) if d in dimensionOrder]
+			spatialAxes = [dimensionOrder.index(d) for d in ['z','y','x'] if d in requiredDimensionOrder]
 			if isinstance(self.pad,int):
 				x = utility.padImage(x,depth=self.pad,mode=None,spatialAxes=spatialAxes,oneHot=oneHot)
 			else:
